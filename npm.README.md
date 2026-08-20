@@ -1,11 +1,19 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/skeithnight/karsa-sentinel/main/assets/logo.png" alt="Karsa Sentinel Logo" width="200" />
+
 # 🛡️ Karsa Sentinel
 
-> Autonomous QA automation agent: Transforms product intent into Playwright BDD test suites with live DOM discovery and self-healing.
+**Autonomous AI QA Automation Agent & Intent-to-Execution Engine**
+
+*AI Proposes. Sentinel Verifies.*
 
 [![npm version](https://img.shields.io/npm/v/karsa-sentinel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/karsa-sentinel)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://github.com/skeithnight/karsa-sentinel/blob/main/LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
 [![Playwright](https://img.shields.io/badge/playwright-1.50-green?style=flat-square)](https://playwright.dev/)
+
+</div>
 
 ---
 

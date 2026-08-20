@@ -1,12 +1,12 @@
 {
   "name": "karsa-sentinel",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Autonomous AI QA automation agent that transforms product intent into validated Playwright BDD test suites",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "karsa-sentinel": "./dist/cli/index.js"
+    "karsa-sentinel": "dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -17,7 +17,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "assets"
   ],
   "repository": {
     "type": "git",

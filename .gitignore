@@ -3,42 +3,44 @@ node_modules/
 .pnp
 .pnp.js
 
-# Build & Dist
+# Build & Distribution Artifacts
 dist/
 build/
 out/
 generated/
 *.tgz
 
-# Testing & Coverage
+# Test Results & Artifacts
 coverage/
 test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+.sentinel/
 
-# Environment & Local Secrets
+# Environment Variables & Local Secrets
 .env
 .env.local
 .env.*.local
 *.pem
 
-# IDE & OS
+# IDE & Operating System Files
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+.idea/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
-.idea/
 
 # Graphify Outputs
 graphify-out/
 
-# Logs & Temp Backups
+# Logs & Temporary Backups
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
