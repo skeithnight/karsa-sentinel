@@ -1,14 +1,14 @@
+import { logger } from "../../core/logger/index.js";
+import { MockAIProvider } from "../router/index.js";
 import type { IAIProvider } from "../../core/contracts/index.js";
 import {
-  type BDDFeature,
   type Requirement,
   type TestCase,
+  type BDDFeature,
   RequirementSchema,
   TestCaseSchema,
   BDDFeatureSchema,
-} from "../../core/models/index.js";
-import { MockAIProvider } from "../router/index.js";
-import { logger } from "../../core/logger/index.js";
+} from "../../core/schemas/index.js";
 
 export interface NineRouterConfig {
   baseUrl?: string;
@@ -17,55 +17,50 @@ export interface NineRouterConfig {
 }
 
 export class NineRouterProvider implements IAIProvider {
-  name = "9router";
+  public readonly name = "9router";
   private baseUrl: string;
-  private authToken?: string;
+  private authToken: string;
   private model: string;
   private fallback = new MockAIProvider();
 
   constructor(config: NineRouterConfig = {}) {
-    this.baseUrl = (config.baseUrl || process.env.NINE_ROUTER_BASE_URL || "http://localhost:20218/v1").replace(/\/+$/, "");
-    this.authToken = config.authToken || process.env.NINE_ROUTER_AUTH_TOKEN;
+    this.baseUrl = config.baseUrl || process.env.NINE_ROUTER_BASE_URL || "http://localhost:20218/v1";
+    this.authToken = config.authToken || process.env.NINE_ROUTER_AUTH_TOKEN || "";
     this.model = config.model || process.env.NINE_ROUTER_MODEL || "mimo";
   }
 
   private async callChatCompletion(systemPrompt: string, userPrompt: string): Promise<string> {
-    const url = `${this.baseUrl}/chat/completions`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (this.authToken) {
-      headers["Authorization"] = `Bearer ${this.authToken}`;
-    }
-
-    const payload = {
-      model: this.model,
-      messages: [
-        {
-          role: "system",
-          content: `${systemPrompt}\n\nCRITICAL INSTRUCTION: You are a pure JSON API backend. Output ONLY valid, parseable raw JSON. Do NOT write any introduction, conversational text, thinking, explanation, or markdown wrappers outside the JSON.`,
-        },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.1,
-      stream: false,
-    };
-
+    const url = `${this.baseUrl.replace(/\/+$/, "")}/chat/completions`;
     logger.debug("9ROUTER:HTTP", `Sending POST to ${url} with model [${this.model}]`, {
       systemPromptLength: systemPrompt.length,
       userPromptLength: userPrompt.length,
       userPromptPreview: userPrompt.slice(0, 150),
     });
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (this.authToken) {
+      headers["Authorization"] = `Bearer ${this.authToken}`;
+    }
+
     const startTime = Date.now();
     const response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        model: this.model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.1,
+      }),
     });
 
-    const duration = Date.now() - startTime;
-    logger.debug("9ROUTER:HTTP", `Response status ${response.status} in ${duration}ms`);
+    const durationMs = Date.now() - startTime;
+    logger.debug("9ROUTER:HTTP", `Response status ${response.status} in ${durationMs}ms`);
 
     if (!response.ok) {
       const errText = await response.text();
@@ -87,7 +82,7 @@ export class NineRouterProvider implements IAIProvider {
       throw new Error("Empty response returned from 9Router proxy");
     }
 
-    logger.debug("9ROUTER:RAW_OUTPUT", `Received content (${content.length} chars):`, content.slice(0, 300));
+    logger.debug("9ROUTER:RAW_OUTPUT", `Received content (${content.length} chars):\n`, content.slice(0, 300));
     return content;
   }
 
@@ -142,8 +137,8 @@ export class NineRouterProvider implements IAIProvider {
   async generateRequirements(content: string): Promise<Requirement> {
     logger.debug("AI:REQUIREMENTS", `Generating requirements from document content (${content.length} chars)`);
     try {
-      const systemPrompt = `Extract structured test requirement intent from the document.
-Output strict JSON matching this exact structure:
+      const systemPrompt = `You are a strict JSON generator. Do NOT output conversational prose, markdown tables, or greetings.
+Return ONLY valid JSON matching this schema:
 {
   "id": "req-1",
   "title": "Feature Title",
@@ -154,7 +149,7 @@ Output strict JSON matching this exact structure:
   "createdAt": "2026-08-20T00:00:00.000Z"
 }`;
 
-      const raw = await this.callChatCompletion(systemPrompt, `Document content:\n${content}`);
+      const raw = await this.callChatCompletion(systemPrompt, `Document content:\n${content}\n\nCRITICAL: Respond ONLY with the JSON object.`);
       const parsed = this.extractJson<Requirement>(raw);
       if (!parsed.id) parsed.id = `req-${Date.now()}`;
       if (!parsed.createdAt) parsed.createdAt = new Date().toISOString();
@@ -168,8 +163,8 @@ Output strict JSON matching this exact structure:
   async generateTestCases(requirement: Requirement): Promise<TestCase[]> {
     logger.debug("AI:TEST_CASES", `Generating test cases for requirement: ${requirement.title}`);
     try {
-      const systemPrompt = `Design comprehensive test cases for this requirement.
-Output ONLY a JSON array with this structure:
+      const systemPrompt = `You are a strict JSON generator. Do NOT output conversational prose, greetings, or markdown explanations.
+Return ONLY a valid JSON array of test cases matching this schema:
 [
   {
     "id": "tc-1",
@@ -189,7 +184,7 @@ Output ONLY a JSON array with this structure:
   }
 ]`;
 
-      const raw = await this.callChatCompletion(systemPrompt, `Requirement:\n${JSON.stringify(requirement, null, 2)}`);
+      const raw = await this.callChatCompletion(systemPrompt, `Requirement:\n${JSON.stringify(requirement, null, 2)}\n\nCRITICAL: Output ONLY the JSON array.`);
       const parsed = this.extractJson<TestCase[] | { testCases: TestCase[] }>(raw);
       const testCases = Array.isArray(parsed) ? parsed : (parsed.testCases || []);
       
@@ -198,11 +193,7 @@ Output ONLY a JSON array with this structure:
       }
 
       logger.debug("AI:TEST_CASES", `Parsed ${testCases.length} test cases from AI response`);
-      return testCases.map((tc, idx) => {
-        if (!tc.id) tc.id = `tc-${requirement.id}-${idx + 1}`;
-        if (!tc.requirementId) tc.requirementId = requirement.id;
-        return TestCaseSchema.parse(tc);
-      });
+      return testCases.map((tc) => TestCaseSchema.parse(tc));
     } catch (err) {
       logger.warn(`9Router test case note: ${err instanceof Error ? err.message : String(err)}`);
       return this.fallback.generateTestCases(requirement);
@@ -212,34 +203,32 @@ Output ONLY a JSON array with this structure:
   async generateBDD(testCases: TestCase[]): Promise<BDDFeature> {
     logger.debug("AI:BDD", `Converting ${testCases.length} test cases to BDD feature`);
     try {
-      const systemPrompt = `Convert test cases into a structured BDD feature.
-Output strict JSON with this exact structure:
+      const systemPrompt = `You are a strict JSON generator. Do NOT output conversational prose, greetings, or markdown explanations.
+Return ONLY a valid JSON object matching this BDDFeature schema:
 {
-  "id": "feat-1",
+  "id": "feature-1",
   "title": "Feature Title",
   "description": "Feature description",
-  "tags": ["@automated", "@smoke"],
+  "targetUrl": "https://example.com/login",
   "scenarios": [
     {
       "id": "scenario-1",
-      "title": "Scenario title",
-      "tags": ["@smoke"],
+      "title": "Scenario Title",
+      "type": "scenario",
+      "tags": ["smoke"],
       "steps": [
-        { "keyword": "Given", "text": "user is on login page" },
-        { "keyword": "When", "text": "user enters valid credentials" },
-        { "keyword": "Then", "text": "user dashboard is displayed" }
+        { "keyword": "Given", "text": "user navigates to https://example.com/login" },
+        { "keyword": "When", "text": "user enters credentials" },
+        { "keyword": "Then", "text": "dashboard is displayed" }
       ]
     }
-  ]
+  ],
+  "tags": ["smoke"]
 }`;
 
-      const raw = await this.callChatCompletion(systemPrompt, `Test Cases:\n${JSON.stringify(testCases, null, 2)}`);
+      const raw = await this.callChatCompletion(systemPrompt, `Test Cases:\n${JSON.stringify(testCases, null, 2)}\n\nCRITICAL: Output ONLY the JSON object.`);
       const parsed = this.extractJson<BDDFeature>(raw);
-      if (!parsed.id) parsed.id = `feat-${Date.now()}`;
-      if (!parsed.scenarios || !Array.isArray(parsed.scenarios)) {
-        return this.fallback.generateBDD(testCases);
-      }
-      logger.debug("AI:BDD", `Parsed BDD Feature: ${parsed.title} with ${parsed.scenarios.length} scenarios`);
+      if (!parsed.id) parsed.id = `feature-${Date.now()}`;
       return BDDFeatureSchema.parse(parsed);
     } catch (err) {
       logger.warn(`9Router BDD note: ${err instanceof Error ? err.message : String(err)}`);
@@ -247,18 +236,20 @@ Output strict JSON with this exact structure:
     }
   }
 
-  async repairLocator(failedSelector: string, pageSnapshot: string): Promise<string> {
-    logger.debug("AI:REPAIR", `Repairing failed selector: ${failedSelector}`);
+  async repairLocator(failedSelector: string, failureContext: string): Promise<string> {
+    logger.debug("AI:REPAIR", `Attempting locator repair for [${failedSelector}]`);
     try {
-      const systemPrompt = `You are a Playwright Locator Specialist. Suggest a resilient locator (role, text, test-id, or CSS) for the failing element given the page snapshot.
-Return only the repaired locator string.`;
+      const systemPrompt = `You are a strict locator repair engine. Propose a single resilient CSS or Playwright selector to replace a broken selector.
+Respond ONLY with the fixed selector string without quotation marks, markdown, or explanation.`;
 
-      const raw = await this.callChatCompletion(systemPrompt, `Failing Locator: ${failedSelector}\n\nPage Snapshot:\n${pageSnapshot}`);
-      const repaired = raw.trim().replace(/^['"`]|['"`]$/g, "");
-      logger.debug("AI:REPAIR", `Repaired selector proposal: ${repaired}`);
-      return repaired;
-    } catch {
-      return this.fallback.repairLocator(failedSelector, pageSnapshot);
+      const userPrompt = `Failed Selector: ${failedSelector}\nFailure Context / Page Snapshot:\n${failureContext.slice(0, 1500)}`;
+      const raw = await this.callChatCompletion(systemPrompt, userPrompt);
+      const repaired = raw.trim().replace(/^["'`]|["'`]$/g, "").split("\n")[0].trim();
+      logger.debug("AI:REPAIR", `Repaired selector: ${repaired}`);
+      return repaired || failedSelector;
+    } catch (err) {
+      logger.warn(`9Router repair note: ${err instanceof Error ? err.message : String(err)}`);
+      return this.fallback.repairLocator(failedSelector, failureContext);
     }
   }
 }

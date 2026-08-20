@@ -1,6 +1,6 @@
 {
   "name": "karsa-sentinel",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Autonomous AI QA automation agent that transforms product intent into validated Playwright BDD test suites",
   "type": "module",
   "main": "./dist/index.js",
@@ -55,6 +55,7 @@
   "license": "MIT",
   "dependencies": {
     "@cucumber/cucumber": "^11.2.0",
+    "@playwright/test": "^1.50.1",
     "commander": "^13.1.0",
     "dotenv": "^16.4.7",
     "playwright": "^1.50.1",

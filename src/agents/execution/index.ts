@@ -28,6 +28,15 @@ export class ExecutionAgent {
     let currentResult = await this.runner.runTests(testPath);
     console.log(this.reporter.formatSummary(currentResult));
 
+    const cleanInitialOutput = this.stripAnsi(currentResult.output);
+    if (!currentResult.passed && (cleanInitialOutput.includes("No tests found") || cleanInitialOutput.includes("MODULE_NOT_FOUND"))) {
+      if (cleanInitialOutput.includes("No tests found")) {
+        console.log("\n⚠️  \x1b[33mNo tests found in '${testPath}'.\x1b[0m");
+        console.log("👉 Please run \x1b[36mnpm run generate\x1b[0m first to generate your test suites from Markdown intent documents.\n");
+      }
+      return currentResult;
+    }
+
     while (!currentResult.passed && enableRepair && attempt < maxAttempts) {
       attempt++;
       console.log(`\n🩹 \x1b[33mKarsa Sentinel Self-Repair:\x1b[0m Attempt ${attempt}/${maxAttempts} healing failing test...`);
