@@ -8,6 +8,7 @@ dist/
 build/
 out/
 generated/
+*.tgz
 
 # Testing & Coverage
 coverage/
@@ -37,9 +38,10 @@ playwright/.cache/
 # Graphify Outputs
 graphify-out/
 
-# Logs
+# Logs & Temp Backups
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.log
+.README.github.bak

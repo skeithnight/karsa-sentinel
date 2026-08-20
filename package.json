@@ -1,6 +1,6 @@
 {
   "name": "karsa-sentinel",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Autonomous AI QA automation agent that transforms product intent into validated Playwright BDD test suites",
   "type": "module",
   "main": "./dist/index.js",
@@ -19,7 +19,6 @@
     "README.md",
     "LICENSE"
   ],
-  "readmeFilename": "README.md",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/skeithnight/karsa-sentinel.git"
@@ -30,7 +29,8 @@
   "homepage": "https://github.com/skeithnight/karsa-sentinel#readme",
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build && npm test",
+    "prepublishOnly": "npm run build && npm test && node scripts/prepare-npm-readme.js",
+    "postpublish": "node scripts/restore-readme.js",
     "start": "tsx src/cli/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -18,7 +18,7 @@ const program = new Command();
 program
   .name("karsa-sentinel")
   .description("AI-powered QA automation agent: Transforms intent into Playwright BDD automation")
-  .version("0.2.0")
+  .version("0.2.2")
   .option("-d, --debug", "Enable detailed debug mode with verbose log tracing")
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
@@ -39,7 +39,8 @@ program
 
       // 1. Scaffold playwright.config.ts
       const playwrightConfigPath = path.resolve(process.cwd(), "playwright.config.ts");
-      const playwrightConfigContent = `import { defineConfig, devices } from '@playwright/test';
+      const playwrightConfigContent = `import 'dotenv/config';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './generated',
@@ -63,7 +64,7 @@ export default defineConfig({
 });
 `;
       await fs.writeFile(playwrightConfigPath, playwrightConfigContent, "utf-8");
-      console.log("   ✅ Created/Updated playwright.config.ts (with HTML reporting enabled)");
+      console.log("   ✅ Created/Updated playwright.config.ts (with dotenv and HTML reporting enabled)");
 
       // 2. Scaffold .env.example
       const envExamplePath = path.resolve(process.cwd(), ".env.example");
@@ -82,7 +83,8 @@ BASE_URL=https://www.saucedemo.com
 PLAYWRIGHT_HEADLESS=true
 PLAYWRIGHT_TIMEOUT=30000
 
-# ── Sentinel Debugging ───────────────────────────────────────
+# ── Sentinel Autonomous Self-Healing ─────────────────────────
+MAX_REPAIR_ATTEMPTS=3
 DEBUG=false
 `;
       await fs.writeFile(envExamplePath, envExampleContent, "utf-8");
@@ -124,19 +126,20 @@ DEBUG=false
           ...pkgData.scripts,
           generate: "karsa-sentinel generate ./docs/examples/login.md",
           "generate:debug": "karsa-sentinel generate ./docs/examples/login.md -d",
-          test: "playwright test",
+          test: "karsa-sentinel run",
+          "test:repair": "karsa-sentinel run --repair",
+          "test:pw": "playwright test",
           report: "playwright show-report",
         };
         await fs.writeFile(pkgPath, JSON.stringify(pkgData, null, 2), "utf-8");
-        console.log("   ✅ Injected generate, generate:debug, test, and report scripts into package.json");
+        console.log("   ✅ Injected generate, test, and report scripts into package.json");
       } catch {
         // Ignore if package.json doesn't exist
       }
 
       console.log("\n🚀 Initialization complete! Try running:");
       console.log("   npm run generate");
-      console.log("   npm run generate:debug  # (runs with verbose debug logs)");
-      console.log("   npm test");
+      console.log("   npm test              # (runs with autonomous self-healing)");
       console.log("   npm run report\n");
     } catch (err) {
       console.error(`❌ Initialization failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -200,16 +203,20 @@ program
 
 program
   .command("run")
-  .description("Execute generated Playwright tests and display structured reports")
+  .alias("test")
+  .description("Execute generated Playwright tests with autonomous self-healing")
   .argument("[testPath]", "Test file or directory to run", "generated")
-  .option("-r, --repair", "Enable autonomous locator self-repair upon test failure")
+  .option("-r, --repair", "Enable autonomous locator self-repair upon test failure", true)
+  .option("--no-repair", "Disable autonomous self-repair")
   .option("-d, --debug", "Enable verbose debug logs")
   .action(async (testPath: string, options: { repair?: boolean; debug?: boolean }) => {
     if (options.debug) logger.setDebug(true);
     try {
       console.log(`\n🛡️  Karsa Sentinel: Running test suite (${testPath})...`);
       const executionAgent = new ExecutionAgent();
-      const result = await executionAgent.executeAndReport(testPath);
+      const result = await executionAgent.executeAndReport(testPath, {
+        enableRepair: options.repair,
+      });
       if (!result.passed) {
         process.exit(1);
       }
