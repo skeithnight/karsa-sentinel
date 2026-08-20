@@ -1,8 +1,6 @@
-<div align="center">
-
 # 🛡️ Karsa Sentinel
 
-**Autonomous QA Automation Agent & Intent-to-Execution Engine**
+**Autonomous AI QA Automation Agent & Intent-to-Execution Engine**
 
 *AI Proposes. Sentinel Verifies.*
 
@@ -12,15 +10,13 @@
 [![TypeScript](https://img.shields.io/badge/typescript-5.7-blue?style=flat-square)](https://www.typescriptlang.org/)
 [![Playwright](https://img.shields.io/badge/playwright-1.50-green?style=flat-square)](https://playwright.dev/)
 
-</div>
-
 ---
 
 ## 📖 Overview
 
 **Karsa Sentinel** is a deterministic, agentic QA engineering system that autonomously converts natural language product intent documents (Markdown, PRDs, Jira specs) into resilient **BDD Gherkin features**, **Playwright Page Objects**, and **executable test suites**.
 
-```
+```text
   ┌────────────────────────┐       ┌────────────────────────┐
   │  Product Intent (Doc)  │  ──▶  │   Karsa Sentinel Core  │
   └────────────────────────┘       └───────────┬────────────┘
