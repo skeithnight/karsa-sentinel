@@ -18,7 +18,7 @@ const program = new Command();
 program
   .name("karsa-sentinel")
   .description("AI-powered QA automation agent: Transforms intent into Playwright BDD automation")
-  .version("0.2.2")
+  .version("0.2.4")
   .option("-d, --debug", "Enable detailed debug mode with verbose log tracing")
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
@@ -39,8 +39,33 @@ program
 
       // 1. Scaffold playwright.config.ts
       const playwrightConfigPath = path.resolve(process.cwd(), "playwright.config.ts");
-      const playwrightConfigContent = `import 'dotenv/config';
+      const playwrightConfigContent = `import fs from 'node:fs';
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+
+// Zero-dependency environment variable loader
+try {
+  if (typeof (process as any).loadEnvFile === 'function') {
+    (process as any).loadEnvFile();
+  } else {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf-8');
+      for (const line of content.split('\\n')) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const [key, ...rest] = trimmed.split('=');
+          const val = rest.join('=').trim().replace(/^["']|["']$/g, '');
+          if (key && !process.env[key.trim()]) {
+            process.env[key.trim()] = val;
+          }
+        }
+      }
+    }
+  }
+} catch {
+  // ignore
+}
 
 export default defineConfig({
   testDir: './generated',
@@ -64,7 +89,7 @@ export default defineConfig({
 });
 `;
       await fs.writeFile(playwrightConfigPath, playwrightConfigContent, "utf-8");
-      console.log("   ✅ Created/Updated playwright.config.ts (with dotenv and HTML reporting enabled)");
+      console.log("   ✅ Created/Updated playwright.config.ts (with zero-dependency env loader and HTML reporting)");
 
       // 2. Scaffold .env.example
       const envExamplePath = path.resolve(process.cwd(), ".env.example");
@@ -118,10 +143,14 @@ DEBUG=false
       await fs.writeFile(path.join(docsDir, "login.md"), sampleLoginDoc, "utf-8");
       console.log("   ✅ Created docs/examples/login.md");
 
-      // 4. Update package.json scripts
+      // 4. Update package.json scripts and dependencies
       const pkgPath = path.resolve(process.cwd(), "package.json");
       try {
         const pkgData = JSON.parse(await fs.readFile(pkgPath, "utf-8"));
+        pkgData.devDependencies = {
+          ...pkgData.devDependencies,
+          "@playwright/test": "^1.50.1",
+        };
         pkgData.scripts = {
           ...pkgData.scripts,
           generate: "karsa-sentinel generate ./docs/examples/login.md",

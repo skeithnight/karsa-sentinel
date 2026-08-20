@@ -1,27 +1,48 @@
-import { defineConfig, devices } from "@playwright/test";
+import fs from 'node:fs';
+import path from 'node:path';
+import { defineConfig, devices } from '@playwright/test';
+
+// Zero-dependency environment variable loader
+try {
+  if (typeof (process as any).loadEnvFile === 'function') {
+    (process as any).loadEnvFile();
+  } else {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf-8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const [key, ...rest] = trimmed.split('=');
+          const val = rest.join('=').trim().replace(/^["']|["']$/g, '');
+          if (key && !process.env[key.trim()]) {
+            process.env[key.trim()] = val;
+          }
+        }
+      }
+    }
+  }
+} catch {
+  // ignore
+}
 
 export default defineConfig({
-  testDir: "./generated",
+  testDir: './generated',
   timeout: 30000,
-  expect: {
-    timeout: 5000,
-  },
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: [["html", { open: "never" }], ["list"]],
+  reporter: [
+    ['html', { open: 'never' }],
+    ['list']
+  ],
   use: {
-    baseURL: process.env.BASE_URL || "http://localhost:3000",
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
-    headless: process.env.PLAYWRIGHT_HEADLESS !== "false",
+    baseURL: process.env.BASE_URL || 'https://www.saucedemo.com',
+    headless: process.env.PLAYWRIGHT_HEADLESS !== 'false',
+    screenshot: 'only-on-failure',
+    trace: 'on-first-retry',
   },
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
 });
