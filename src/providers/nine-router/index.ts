@@ -14,6 +14,7 @@ export interface NineRouterConfig {
   baseUrl?: string;
   authToken?: string;
   model?: string;
+  maxTokens?: number;
 }
 
 export class NineRouterProvider implements IAIProvider {
@@ -21,12 +22,14 @@ export class NineRouterProvider implements IAIProvider {
   private baseUrl: string;
   private authToken: string;
   private model: string;
+  private maxTokens: number;
   private fallback = new MockAIProvider();
 
   constructor(config: NineRouterConfig = {}) {
     this.baseUrl = config.baseUrl || process.env.NINE_ROUTER_BASE_URL || "http://localhost:20218/v1";
     this.authToken = config.authToken || process.env.NINE_ROUTER_AUTH_TOKEN || "";
     this.model = config.model || process.env.NINE_ROUTER_MODEL || "mimo";
+    this.maxTokens = config.maxTokens || 4096;
   }
 
   private async callChatCompletion(systemPrompt: string, userPrompt: string): Promise<string> {
@@ -56,6 +59,7 @@ export class NineRouterProvider implements IAIProvider {
           { role: "user", content: userPrompt },
         ],
         temperature: 0.1,
+        max_tokens: this.maxTokens,
       }),
     });
 
@@ -86,6 +90,47 @@ export class NineRouterProvider implements IAIProvider {
     return content;
   }
 
+  private attemptRepairTruncatedJson(str: string): string {
+    let trimmed = str.trim();
+    if (!trimmed) return "{}";
+
+    // Close any unclosed string
+    const quoteCount = (trimmed.match(/(?<!\\)"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+      trimmed += '"';
+    }
+
+    // Clean trailing commas
+    trimmed = trimmed.replace(/,\s*$/, "");
+
+    // Count open braces/brackets
+    const stack: string[] = [];
+    let inString = false;
+    for (let i = 0; i < trimmed.length; i++) {
+      const char = trimmed[i];
+      if (char === '"' && (i === 0 || trimmed[i - 1] !== "\\")) {
+        inString = !inString;
+      } else if (!inString) {
+        if (char === "{" || char === "[") {
+          stack.push(char);
+        } else if (char === "}") {
+          if (stack[stack.length - 1] === "{") stack.pop();
+        } else if (char === "]") {
+          if (stack[stack.length - 1] === "[") stack.pop();
+        }
+      }
+    }
+
+    // Auto-close in reverse order
+    while (stack.length > 0) {
+      const open = stack.pop();
+      if (open === "{") trimmed += "}";
+      else if (open === "[") trimmed += "]";
+    }
+
+    return trimmed;
+  }
+
   public extractJson<T>(raw: string): T {
     logger.debug("JSON:EXTRACT", `Attempting extraction on raw string length ${raw.length}`);
 
@@ -99,20 +144,31 @@ export class NineRouterProvider implements IAIProvider {
       text = codeBlockMatch[1].trim();
     }
 
-    // 3. Find candidates for JSON array or object
+    // 3. Collect candidates for JSON array or object
     const candidates: string[] = [text];
 
     const firstBrace = text.indexOf("{");
     const lastBrace = text.lastIndexOf("}");
-    if (firstBrace !== -1 && lastBrace > firstBrace) {
-      candidates.push(text.slice(firstBrace, lastBrace + 1));
+    if (firstBrace !== -1) {
+      if (lastBrace > firstBrace) {
+        candidates.push(text.slice(firstBrace, lastBrace + 1));
+      } else {
+        candidates.push(this.attemptRepairTruncatedJson(text.slice(firstBrace)));
+      }
     }
 
     const firstBracket = text.indexOf("[");
     const lastBracket = text.lastIndexOf("]");
-    if (firstBracket !== -1 && lastBracket > firstBracket) {
-      candidates.push(text.slice(firstBracket, lastBracket + 1));
+    if (firstBracket !== -1) {
+      if (lastBracket > firstBracket) {
+        candidates.push(text.slice(firstBracket, lastBracket + 1));
+      } else {
+        candidates.push(this.attemptRepairTruncatedJson(text.slice(firstBracket)));
+      }
     }
+
+    // Also add auto-repaired full text candidate
+    candidates.push(this.attemptRepairTruncatedJson(text));
 
     for (const candidate of candidates) {
       try {
