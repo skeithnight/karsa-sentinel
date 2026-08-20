@@ -1,0 +1,65 @@
+{
+  "name": "karsa-sentinel",
+  "version": "0.1.1",
+  "description": "AI-powered QA automation agent that transforms product intent into validated Playwright BDD automation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "karsa-sentinel": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skeithnight/karsa-sentinel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/skeithnight/karsa-sentinel/issues"
+  },
+  "homepage": "https://github.com/skeithnight/karsa-sentinel#readme",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build && npm test",
+    "start": "tsx src/cli/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:generate": "tsx src/cli/index.ts generate",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "qa",
+    "test-automation",
+    "playwright",
+    "cucumber",
+    "bdd",
+    "testing",
+    "agent"
+  ],
+  "author": "skeithnight",
+  "license": "MIT",
+  "dependencies": {
+    "@cucumber/cucumber": "^11.2.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.50.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
