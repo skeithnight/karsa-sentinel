@@ -1,4 +1,4 @@
-name: Publish to npm
+name: Publish Package
 
 on:
   release:
@@ -6,13 +6,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish:
+  publish-npm:
+    name: Publish to npmjs.com
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js for npm
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
@@ -26,7 +27,47 @@ jobs:
           npm run build
           npm test
 
-      - name: Publish package
+      - name: Publish to npm
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-github-packages:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js for GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@skeithnight'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scope package for GitHub Packages registry
+        run: |
+          node -e '
+            const fs = require("fs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf-8"));
+            pkg.name = "@skeithnight/karsa-sentinel";
+            pkg.publishConfig = { registry: "https://npm.pkg.github.com" };
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2));
+          '
+
+      - name: Build and Test
+        run: |
+          npm run build
+          npm test
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
