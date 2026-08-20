@@ -1,96 +1,69 @@
-# Karsa Sentinel 🛡️
+<div align="center">
 
-[![npm version](https://img.shields.io/npm/v/karsa-sentinel.svg)](https://www.npmjs.com/package/karsa-sentinel)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
-[![Playwright](https://img.shields.io/badge/Playwright-1.50-orange.svg)](https://playwright.dev/)
+# 🛡️ Karsa Sentinel
 
-> **Autonomous AI Test Engineering Agent** that transforms product intent into validated, production-ready **Playwright** and **Cucumber BDD** test suites.
+**Autonomous QA Automation Agent & Intent-to-Execution Engine**
+
+*AI Proposes. Sentinel Verifies.*
+
+[![npm version](https://img.shields.io/npm/v/karsa-sentinel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/karsa-sentinel)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/typescript-5.7-blue?style=flat-square)](https://www.typescriptlang.org/)
+[![Playwright](https://img.shields.io/badge/playwright-1.50-green?style=flat-square)](https://playwright.dev/)
+
+</div>
 
 ---
 
-## 🌟 Product Vision
+## 📖 Overview
 
-Karsa Sentinel bridges the gap between high-level product requirements and bulletproof test automation. Given a lightweight requirement document, user story, or reproduction guide, Sentinel autonomously explores the application, designs test cases, generates Gherkin BDD scenarios with Playwright Page Objects, executes the suite, and self-repairs locators upon failure.
-
-### Core Principle: *AI Proposes. Sentinel Verifies.*
-The LLM is never the single source of truth. Sentinel continuously verifies all AI proposals through:
-- **Zod Schema Validation**
-- **DOM & Accessibility Inspection**
-- **TypeScript Compilation**
-- **Playwright Test Execution & Evidence Capture (Traces / Screenshots)**
+**Karsa Sentinel** is a deterministic, agentic QA engineering system that autonomously converts natural language product intent documents (Markdown, PRDs, Jira specs) into resilient **BDD Gherkin features**, **Playwright Page Objects**, and **executable test suites**.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Product Intent Document                  │
-│                     (Markdown / User Story)                 │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │  Understand Intent  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                 ┌───────────────────────────┐
-                 │  Explore Web Application  │
-                 │      (Playwright DOM)     │
-                 └─────────────┬─────────────┘
-                               │
-                               ▼
-                ┌─────────────────────────────┐
-                │   Design Tests & Gherkin    │
-                │        (BDD Features)       │
-                └──────────────┬──────────────┘
-                               │
-                               ▼
-               ┌───────────────────────────────┐
-               │   Generate Code & PageObjects │
-               │     (Playwright TypeScript)   │
-               └───────────────┬───────────────┘
-                               │
-                               ▼
-                 ┌───────────────────────────┐
-                 │     Execute & Verify      │
-                 └─────────────┬─────────────┘
-                               │
-                ┌──────────────┴──────────────┐
-                │                             │
-          [On Failure]                   [On Success]
-                │                             │
-                ▼                             ▼
-       ┌─────────────────┐           ┌──────────────────┐
-       │   Self-Repair   │           │ Persist Memory & │
-       │ (Fix Locators)  │           │ Complete Suite   │
-       └─────────────────┘           └──────────────────┘
+  ┌────────────────────────┐       ┌────────────────────────┐
+  │  Product Intent (Doc)  │  ──▶  │   Karsa Sentinel Core  │
+  └────────────────────────┘       └───────────┬────────────┘
+                                               │
+               ┌───────────────────────────────┼───────────────────────────────┐
+               ▼                               ▼                               ▼
+  ┌────────────────────────┐      ┌────────────────────────┐      ┌────────────────────────┐
+  │   Live DOM Discovery   │      │ 1:1 Scenario Specs     │      │   Interactive HTML     │
+  │  (Resilient Locators)  │      │   & Page Objects       │      │   & Failure Reports    │
+  └────────────────────────┘      └────────────────────────┘      └────────────────────────┘
 ```
 
 ---
 
-## 📦 Installation
+## ⚡ Quick Start
 
-### Option 1: Run instantly with `npx` (No installation needed)
+### 1. Zero-Config Project Initialization
 ```bash
-npx karsa-sentinel generate ./docs/examples/login.md
+npx karsa-sentinel init
+```
+*Automatically configures `playwright.config.ts` (with HTML reporting), creates `.env.example`, adds starter specs, and injects package scripts.*
+
+### 2. Generate Tests from Requirement
+```bash
+npx karsa-sentinel generate ./docs/login.md
 ```
 
-### Option 2: Install globally as a CLI tool
+### 3. Run in Verbose Debug Mode (`-d`)
 ```bash
-npm install -g karsa-sentinel
-karsa-sentinel generate ./docs/examples/login.md --output ./generated
+npx karsa-sentinel generate ./docs/login.md -d
 ```
 
-### Option 3: Install as a dependency in your project
+### 4. Execute Tests & View HTML Reports
 ```bash
-npm install karsa-sentinel
+npm test
+npm run report
 ```
 
 ---
 
 ## 🤖 Supported AI Providers
 
-Karsa Sentinel supports pluggable AI provider adapters configured via environment variables or programmatic options:
+Karsa Sentinel supports pluggable AI provider adapters configured via environment variables or CLI flags:
 
 | Provider | Description | Required Environment Variables |
 | :--- | :--- | :--- |
@@ -103,8 +76,6 @@ Karsa Sentinel supports pluggable AI provider adapters configured via environmen
 
 ## ⚙️ Configuration (`.env`)
 
-Create a `.env` file in your working directory:
-
 ```env
 # ── AI Provider Configuration ────────────────────────────────
 AI_PROVIDER=9router
@@ -114,128 +85,73 @@ NINE_ROUTER_BASE_URL=http://localhost:20218/v1
 NINE_ROUTER_AUTH_TOKEN=sk-your-token-here
 NINE_ROUTER_MODEL=mimo
 
-# ── OpenAI / Gemini (Alternative) ───────────────────────────
-AI_MODEL=gpt-4o
-OPENAI_API_KEY=your_openai_key
-GEMINI_API_KEY=your_gemini_key
-
 # ── Target Application ───────────────────────────────────────
-BASE_URL=https://staging.example.com
+BASE_URL=https://www.saucedemo.com
 
 # ── Playwright Configuration ─────────────────────────────────
 PLAYWRIGHT_HEADLESS=true
 PLAYWRIGHT_TIMEOUT=30000
 
-# ── Agent Configuration ──────────────────────────────────────
-MAX_REPAIR_ATTEMPTS=3
-MAX_CRAWL_PAGES=20
-MAX_CRAWL_DEPTH=3
+# ── Debug Logging ────────────────────────────────────────────
+DEBUG=false # Set to true or pass -d CLI flag
 ```
 
 ---
 
-## 💻 CLI Usage
+## 💻 CLI Commands & Options
 
+### `karsa-sentinel init`
+Initializes current workspace with Playwright configuration, HTML reports, and sample specs.
+```bash
+karsa-sentinel init [-d]
+```
+
+### `karsa-sentinel generate <documentPath>`
+Generates BDD scenarios, Page Objects, and Playwright tests from an intent document.
 ```bash
 karsa-sentinel generate <documentPath> [options]
 ```
 
-### Options
-- `-o, --output <dir>`: Directory where generated BDD feature and Playwright spec files will be written *(default: `generated`)*.
-- `-V, --version`: Output the version number.
-- `-h, --help`: Display command options and help.
+#### Options:
+- `-d, --debug`: **Enable detailed debug mode with verbose log tracing** (traces HTTP requests, prompt previews, token usage, DOM discovery, and AST extraction).
+- `-o, --output <dir>`: Directory where generated files will be written *(default: `generated`)*.
+- `-p, --provider <name>`: Override AI provider (`9router` | `openai` | `gemini` | `mock`).
+- `-m, --model <name>`: Override AI model name (e.g. `mimo`, `gpt-4o`).
+- `--skip-crawl`: Skip live browser DOM exploration.
 
-### Example
+### `karsa-sentinel run [testPath]`
+Executes Playwright tests with autonomous failure analysis.
 ```bash
-# Generate automation from a Markdown spec
-karsa-sentinel generate ./docs/login.md -o ./tests/e2e
-```
-
-Output:
-```text
-🛡️  Karsa Sentinel: Processing intent document: ./docs/login.md
-🤖 AI Provider:     9ROUTER
-
-✅ Generation complete!
-   - Feature: ./tests/e2e/user-authentication.feature
-   - Spec:    ./tests/e2e/user-authentication.spec.ts
+karsa-sentinel run [testPath] [-r, --repair] [-d, --debug]
 ```
 
 ---
 
 ## 🔌 Programmatic API
 
-You can import Karsa Sentinel directly in your TypeScript / JavaScript codebase:
-
 ```typescript
-import { SentinelOrchestrator, NineRouterProvider } from "karsa-sentinel";
+import { SentinelOrchestrator, NineRouterProvider, logger } from "karsa-sentinel";
 
-// 1. Initialize Provider
+// Enable verbose logging programmatically
+logger.setDebug(true);
+
 const provider = new NineRouterProvider({
   baseUrl: "http://localhost:20218/v1",
   authToken: "sk-...",
   model: "mimo",
 });
 
-// 2. Instantiate Orchestrator
 const orchestrator = new SentinelOrchestrator(provider);
-
-// 3. Generate Suite
 const result = await orchestrator.generate({
-  documentPath: "./docs/examples/login.md",
+  documentPath: "./docs/login.md",
   outputDirectory: "./generated",
 });
 
-console.log(`Feature created at: ${result.featureFile}`);
-console.log(`Spec created at:    ${result.specFile}`);
-```
-
----
-
-## 📁 Repository Structure
-
-```text
-karsa-sentinel/
-├── src/
-│   ├── agents/          # Autonomous agents (Orchestrator, Requirement, Explorer, BDD, Repair, etc.)
-│   ├── core/            # Zod schemas, TypeScript domain models, contracts, pipeline orchestration
-│   ├── crawler/         # Playwright browser context manager, DOM discovery, locator ranking
-│   ├── documents/       # Document parsers & registries (Markdown, specs)
-│   ├── generators/      # BDD Gherkin & Playwright TypeScript code generators
-│   ├── execution/       # Test runner, reporting, and failure triage classification
-│   ├── memory/          # Persistent requirement, UI element, and automation artifact memory
-│   ├── providers/       # AI provider adapters (9Router, OpenAI, Gemini, Mock)
-│   ├── cli/             # CLI executable entry points
-│   └── index.ts         # Library exports
-├── docs/
-│   └── examples/        # Sample requirement documents (e.g. login.md)
-├── tests/
-│   └── unit/            # Vitest unit tests
-├── generated/           # Output directory for generated suites
-├── playwright.config.ts # Playwright automation configuration
-├── tsconfig.json        # TypeScript configuration
-└── package.json
-```
-
----
-
-## 🛠️ Development & Testing
-
-```bash
-# Install dependencies
-npm install
-
-# Run unit tests
-npm test
-
-# Run type checker
-npm run typecheck
-
-# Build TypeScript to dist/
-npm run build
+console.log("Generated Spec:", result.specFile);
+console.log("Generated Page Object:", result.pageObjectFile);
 ```
 
 ---
 
 ## 📄 License
-[MIT](file:///Users/dwiki.nugraha/dwikicode/karsa-sentinel/LICENSE) © 2026 [skeithnight](https://github.com/skeithnight)
+[MIT](LICENSE) © [skeithnight](https://github.com/skeithnight)

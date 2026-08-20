@@ -1,12 +1,12 @@
 {
   "name": "karsa-sentinel",
-  "version": "0.1.1",
-  "description": "AI-powered QA automation agent that transforms product intent into validated Playwright BDD automation",
+  "version": "0.2.0",
+  "description": "Autonomous AI QA automation agent that transforms product intent into validated Playwright BDD test suites",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "karsa-sentinel": "dist/cli/index.js"
+    "karsa-sentinel": "./dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -45,7 +45,9 @@
     "cucumber",
     "bdd",
     "testing",
-    "agent"
+    "agent",
+    "crawler",
+    "self-repair"
   ],
   "author": "skeithnight",
   "license": "MIT",
@@ -57,9 +59,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
-    "tsx": "^4.19.3",
-    "typescript": "^5.7.3",
+    "@types/node": "^22.20.1",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
     "vitest": "^3.0.5"
   }
 }

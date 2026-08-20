@@ -21,7 +21,7 @@ export class MarkdownRequirementParser implements IDocumentParser {
         targetUrl = trimmed.replace(/`/g, "").trim();
       } else if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
         targetUrl = trimmed;
-      } else if (trimmed.startsWith("### Scenario") || trimmed.startsWith("## Scenario")) {
+      } else if (trimmed.match(/^#{2,4}\s+Scenario\s*\d*:/i)) {
         scenarios.push(trimmed.replace(/^#+\s+/, "").trim());
       } else if (trimmed.length > 0 && !trimmed.startsWith("#")) {
         descriptionLines.push(trimmed);

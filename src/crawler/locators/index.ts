@@ -1,17 +1,34 @@
 import type { LocatorCandidate } from "../../core/models/index.js";
 
+export interface DiscoveredElementInfo {
+  tag: string;
+  id?: string;
+  name?: string;
+  text?: string;
+  role?: string;
+  testId?: string;
+  dataTest?: string;
+  placeholder?: string;
+  ariaLabel?: string;
+  type?: string;
+  className?: string;
+}
+
 export class LocatorGenerator {
-  generateCandidates(element: {
-    tag: string;
-    id?: string;
-    name?: string;
-    text?: string;
-    role?: string;
-    testId?: string;
-    placeholder?: string;
-  }): LocatorCandidate[] {
+  generateCandidates(element: DiscoveredElementInfo): LocatorCandidate[] {
     const candidates: LocatorCandidate[] = [];
 
+    // 1. data-test (SauceDemo / Cypress / Playwright best practice)
+    if (element.dataTest) {
+      candidates.push({
+        selector: `[data-test="${element.dataTest}"]`,
+        strategy: "test-id",
+        confidence: 0.99,
+        isResilient: true,
+      });
+    }
+
+    // 2. data-testid
     if (element.testId) {
       candidates.push({
         selector: `[data-testid="${element.testId}"]`,
@@ -21,25 +38,39 @@ export class LocatorGenerator {
       });
     }
 
-    if (element.role && element.name) {
+    // 3. getByRole with accessible name
+    if (element.role && (element.name || element.ariaLabel || element.text)) {
+      const accessibleName = element.ariaLabel || element.name || element.text;
       candidates.push({
-        selector: `role=${element.role}[name="${element.name}"]`,
+        selector: `role=${element.role}[name="${accessibleName}"]`,
         strategy: "role",
         confidence: 0.95,
         isResilient: true,
       });
     }
 
+    // 4. placeholder
     if (element.placeholder) {
       candidates.push({
         selector: `[placeholder="${element.placeholder}"]`,
         strategy: "placeholder",
+        confidence: 0.88,
+        isResilient: true,
+      });
+    }
+
+    // 5. name attribute
+    if (element.name) {
+      candidates.push({
+        selector: `[name="${element.name}"]`,
+        strategy: "label",
         confidence: 0.85,
         isResilient: true,
       });
     }
 
-    if (element.text && element.text.trim().length > 0 && element.text.length < 50) {
+    // 6. Visible short text
+    if (element.text && element.text.trim().length > 0 && element.text.length < 40) {
       candidates.push({
         selector: `text="${element.text.trim()}"`,
         strategy: "text",
@@ -48,7 +79,8 @@ export class LocatorGenerator {
       });
     }
 
-    if (element.id) {
+    // 7. ID
+    if (element.id && !element.id.startsWith("el-") && !element.id.match(/\d{5,}/)) {
       candidates.push({
         selector: `#${element.id}`,
         strategy: "css",

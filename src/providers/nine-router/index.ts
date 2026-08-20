@@ -8,6 +8,7 @@ import {
   BDDFeatureSchema,
 } from "../../core/models/index.js";
 import { MockAIProvider } from "../router/index.js";
+import { logger } from "../../core/logger/index.js";
 
 export interface NineRouterConfig {
   baseUrl?: string;
@@ -37,76 +38,112 @@ export class NineRouterProvider implements IAIProvider {
       headers["Authorization"] = `Bearer ${this.authToken}`;
     }
 
+    const payload = {
+      model: this.model,
+      messages: [
+        {
+          role: "system",
+          content: `${systemPrompt}\n\nCRITICAL INSTRUCTION: You are a pure JSON API backend. Output ONLY valid, parseable raw JSON. Do NOT write any introduction, conversational text, thinking, explanation, or markdown wrappers outside the JSON.`,
+        },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.1,
+      stream: false,
+    };
+
+    logger.debug("9ROUTER:HTTP", `Sending POST to ${url} with model [${this.model}]`, {
+      systemPromptLength: systemPrompt.length,
+      userPromptLength: userPrompt.length,
+      userPromptPreview: userPrompt.slice(0, 150),
+    });
+
+    const startTime = Date.now();
     const response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        model: this.model,
-        messages: [
-          { role: "system", content: `${systemPrompt}\n\nIMPORTANT: Return ONLY valid, parseable raw JSON.` },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.1,
-        stream: false,
-      }),
+      body: JSON.stringify(payload),
     });
+
+    const duration = Date.now() - startTime;
+    logger.debug("9ROUTER:HTTP", `Response status ${response.status} in ${duration}ms`);
 
     if (!response.ok) {
       const errText = await response.text();
+      logger.debug("9ROUTER:HTTP_ERR", `API error response: ${errText}`);
       throw new Error(`9Router API error (${response.status}): ${errText}`);
     }
 
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
+      usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number };
     };
+
+    if (data.usage) {
+      logger.debug("9ROUTER:USAGE", `Tokens: ${data.usage.total_tokens} (prompt: ${data.usage.prompt_tokens}, completion: ${data.usage.completion_tokens})`);
+    }
 
     const content = data.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error("Empty response returned from 9Router proxy");
     }
 
+    logger.debug("9ROUTER:RAW_OUTPUT", `Received content (${content.length} chars):`, content.slice(0, 300));
     return content;
   }
 
   public extractJson<T>(raw: string): T {
+    logger.debug("JSON:EXTRACT", `Attempting extraction on raw string length ${raw.length}`);
+
     // 1. Strip thinking / reasoning tags (<think>...</think>)
     let text = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
     // 2. Extract from markdown code fence if present
     const codeBlockMatch = /```(?:json)?\s*([\s\S]*?)(?:```|$)/i.exec(text);
     if (codeBlockMatch && codeBlockMatch[1]) {
+      logger.debug("JSON:EXTRACT", "Found markdown code block fence, extracting inner block");
       text = codeBlockMatch[1].trim();
     }
 
-    // 3. Find first outer JSON array or object
+    // 3. Find candidates for JSON array or object
+    const candidates: string[] = [text];
+
     const firstBrace = text.indexOf("{");
+    const lastBrace = text.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      candidates.push(text.slice(firstBrace, lastBrace + 1));
+    }
+
     const firstBracket = text.indexOf("[");
+    const lastBracket = text.lastIndexOf("]");
+    if (firstBracket !== -1 && lastBracket > firstBracket) {
+      candidates.push(text.slice(firstBracket, lastBracket + 1));
+    }
 
-    if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
-      const lastBracket = text.lastIndexOf("]");
-      if (lastBracket !== -1 && lastBracket > firstBracket) {
-        text = text.slice(firstBracket, lastBracket + 1);
-      }
-    } else if (firstBrace !== -1) {
-      const lastBrace = text.lastIndexOf("}");
-      if (lastBrace !== -1 && lastBrace > firstBrace) {
-        text = text.slice(firstBrace, lastBrace + 1);
+    for (const candidate of candidates) {
+      try {
+        const parsed = JSON.parse(candidate) as T;
+        logger.debug("JSON:EXTRACT_SUCCESS", "Successfully parsed JSON structure");
+        return parsed;
+      } catch {
+        try {
+          const cleanCommas = candidate.replace(/,\s*([}\]])/g, "$1");
+          const parsed = JSON.parse(cleanCommas) as T;
+          logger.debug("JSON:EXTRACT_SUCCESS", "Successfully parsed JSON after comma cleanup");
+          return parsed;
+        } catch {
+          // continue candidate search
+        }
       }
     }
 
-    try {
-      return JSON.parse(text) as T;
-    } catch {
-      // 4. Strip trailing commas and retry
-      const cleanCommas = text.replace(/,\s*([}\]])/g, "$1");
-      return JSON.parse(cleanCommas) as T;
-    }
+    throw new Error(`Unable to extract valid JSON from LLM response: ${raw.slice(0, 150)}...`);
   }
 
   async generateRequirements(content: string): Promise<Requirement> {
+    logger.debug("AI:REQUIREMENTS", `Generating requirements from document content (${content.length} chars)`);
     try {
-      const systemPrompt = `You are an AI QA Engineer. Extract structured test requirement intent from the document.
-Output MUST be strict JSON matching this schema:
+      const systemPrompt = `Extract structured test requirement intent from the document.
+Output strict JSON matching this exact structure:
 {
   "id": "req-1",
   "title": "Feature Title",
@@ -123,15 +160,16 @@ Output MUST be strict JSON matching this schema:
       if (!parsed.createdAt) parsed.createdAt = new Date().toISOString();
       return RequirementSchema.parse(parsed);
     } catch (err) {
-      console.warn("9Router requirement extraction note:", err instanceof Error ? err.message : String(err));
+      logger.warn(`9Router requirement extraction note: ${err instanceof Error ? err.message : String(err)}`);
       return this.fallback.generateRequirements(content);
     }
   }
 
   async generateTestCases(requirement: Requirement): Promise<TestCase[]> {
+    logger.debug("AI:TEST_CASES", `Generating test cases for requirement: ${requirement.title}`);
     try {
-      const systemPrompt = `You are a Senior Test Automation Architect. Design comprehensive test cases for this requirement.
-Output MUST be a JSON array:
+      const systemPrompt = `Design comprehensive test cases for this requirement.
+Output ONLY a JSON array with this structure:
 [
   {
     "id": "tc-1",
@@ -159,21 +197,23 @@ Output MUST be a JSON array:
         return this.fallback.generateTestCases(requirement);
       }
 
+      logger.debug("AI:TEST_CASES", `Parsed ${testCases.length} test cases from AI response`);
       return testCases.map((tc, idx) => {
         if (!tc.id) tc.id = `tc-${requirement.id}-${idx + 1}`;
         if (!tc.requirementId) tc.requirementId = requirement.id;
         return TestCaseSchema.parse(tc);
       });
     } catch (err) {
-      console.warn("9Router test case note:", err instanceof Error ? err.message : String(err));
+      logger.warn(`9Router test case note: ${err instanceof Error ? err.message : String(err)}`);
       return this.fallback.generateTestCases(requirement);
     }
   }
 
   async generateBDD(testCases: TestCase[]): Promise<BDDFeature> {
+    logger.debug("AI:BDD", `Converting ${testCases.length} test cases to BDD feature`);
     try {
-      const systemPrompt = `You are a BDD Gherkin Expert. Convert test cases into a structured BDD feature.
-Output MUST be strict JSON matching this schema:
+      const systemPrompt = `Convert test cases into a structured BDD feature.
+Output strict JSON with this exact structure:
 {
   "id": "feat-1",
   "title": "Feature Title",
@@ -199,20 +239,24 @@ Output MUST be strict JSON matching this schema:
       if (!parsed.scenarios || !Array.isArray(parsed.scenarios)) {
         return this.fallback.generateBDD(testCases);
       }
+      logger.debug("AI:BDD", `Parsed BDD Feature: ${parsed.title} with ${parsed.scenarios.length} scenarios`);
       return BDDFeatureSchema.parse(parsed);
     } catch (err) {
-      console.warn("9Router BDD note:", err instanceof Error ? err.message : String(err));
+      logger.warn(`9Router BDD note: ${err instanceof Error ? err.message : String(err)}`);
       return this.fallback.generateBDD(testCases);
     }
   }
 
   async repairLocator(failedSelector: string, pageSnapshot: string): Promise<string> {
+    logger.debug("AI:REPAIR", `Repairing failed selector: ${failedSelector}`);
     try {
       const systemPrompt = `You are a Playwright Locator Specialist. Suggest a resilient locator (role, text, test-id, or CSS) for the failing element given the page snapshot.
 Return only the repaired locator string.`;
 
       const raw = await this.callChatCompletion(systemPrompt, `Failing Locator: ${failedSelector}\n\nPage Snapshot:\n${pageSnapshot}`);
-      return raw.trim().replace(/^['"`]|['"`]$/g, "");
+      const repaired = raw.trim().replace(/^['"`]|['"`]$/g, "");
+      logger.debug("AI:REPAIR", `Repaired selector proposal: ${repaired}`);
+      return repaired;
     } catch {
       return this.fallback.repairLocator(failedSelector, pageSnapshot);
     }
