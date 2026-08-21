@@ -8,14 +8,6 @@ Given('user navigates to {string}', async ({ sauceDemoUserAuthenticationPage }, 
   await sauceDemoUserAuthenticationPage.goto(url);
 });
 
-When('user performs actions for Scenarios', async ({ sauceDemoUserAuthenticationPage, page }) => {
-  await page.waitForLoadState('domcontentloaded');
-});
-
-Then('expected outcome for Scenarios is verified', async ({ sauceDemoUserAuthenticationPage, page }) => {
-  await page.waitForLoadState('domcontentloaded');
-});
-
 When('user enters username {string}', async ({ sauceDemoUserAuthenticationPage, page }, value: string) => {
   const pageObj = sauceDemoUserAuthenticationPage as any;
   if (pageObj.userNameInput) await pageObj.userNameInput.fill(value);
@@ -31,6 +23,10 @@ When('user clicks the Login button', async ({ sauceDemoUserAuthenticationPage, p
   const pageObj = sauceDemoUserAuthenticationPage as any;
   if (pageObj.loginButton) {
     await pageObj.loginButton.click();
+  } else if (pageObj.submitButton) {
+    await pageObj.submitButton.click();
+  } else if (pageObj.button) {
+    await pageObj.button.click();
   } else {
     await page.getByRole('button').first().click();
   }

@@ -21,7 +21,7 @@
 
 ## 📑 Table of Contents
 - [📖 Product Vision & Philosophy](#-product-vision--philosophy)
-- [🏛️ Enterprise Architecture](#️-enterprise-architecture)
+- [🏛️ Enterprise Architecture & Execution Flow](#️-enterprise-architecture--execution-flow)
 - [🔄 Autonomous Pipeline Flow](#-autonomous-pipeline-flow)
 - [🚀 Key Capabilities](#-key-capabilities)
 - [📁 Project Structure](#-project-structure)
@@ -30,7 +30,7 @@
 - [🤖 Supported AI Providers](#-supported-ai-providers)
 - [⚙️ Configuration (`.env`)](#️-configuration-env)
 - [💻 CLI Reference](#-cli-reference)
-- [🩹 Autonomous Self-Healing](#-autonomous-self-healing)
+- [🩹 Autonomous Self-Healing Trust Loop](#-autonomous-self-healing-trust-loop)
 - [🐞 Real-Time Debug Tracing (`-d`)](#-real-time-debug-tracing--d)
 - [🔌 Programmatic TypeScript API](#-programmatic-typescript-api)
 - [📊 Knowledge Graph (Graphify)](#-knowledge-graph-graphify)
@@ -46,11 +46,17 @@ Modern software testing is bottlenecked by the manual effort required to write, 
 **Karsa Sentinel** bridges product intent and executable test verification. It takes natural language requirements (Markdown, Jira specs, PRDs) and pairs LLM intelligence with real browser DOM inspection to output deterministic, enterprise-grade **Playwright BDD test suites (`playwright-bdd`)**, **OOP Page Objects extending `BasePage`**, **Step Definitions (`createBdd`)**, and **Typed Dependency Injection Fixtures (`test.extend`)** with **autonomous self-repair capabilities**.
 
 > ### 💡 Core Tenet: *AI Proposes. Sentinel Verifies.*
-> LLMs generate hypotheses (test scenarios and semantic intent). Sentinel independently discovers live DOM elements, resolves semantic actions to resilient selectors, and verifies test execution with native Playwright assertions before committing code.
+> LLMs generate hypotheses (test scenarios and semantic intent). Sentinel independently discovers live DOM elements, resolves semantic actions to resilient selectors using scored evidence matching, and validates repairs on a live headless browser before committing code.
 
 ---
 
-## 🏛️ Enterprise Architecture
+## 🏛️ Enterprise Architecture & Execution Flow
+
+<div align="center">
+
+<img src="assets/karsa-sentinel-visualize.png" alt="Karsa Sentinel Architecture & Execution Flow" width="100%" />
+
+</div>
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -63,7 +69,8 @@ Modern software testing is bottlenecked by the manual effort required to write, 
   │   1. INTENT INGESTION   │  │   2. DOM EXPLORATION    │  │     3. AI SYNTHESIS     │
   │ • Markdown Parser       │  │ • Headless Crawler      │  │ • 9Router Proxy (mimo)  │
   │ • Jira / PRD Extractors │  │ • Accessibility Tree    │  │ • OpenAI (gpt-4o)       │
-  │ • URL & Scenario Parse  │  │ • Resilient Locators    │  │ • Gemini 1.5 Pro        │
+  │ • RequirementMemory     │  │ • Resilient Locators    │  │ • Gemini 1.5 Pro        │
+  │ • SHA-256 Fingerprint   │  │ • ApplicationMemory     │  │ • AutomationMemory      │
   └────────────┬────────────┘  └────────────┬────────────┘  └────────────┬────────────┘
                │                            │                            │
                └────────────────────────────┼────────────────────────────┘
@@ -71,8 +78,9 @@ Modern software testing is bottlenecked by the manual effort required to write, 
                                             ▼
                                ┌─────────────────────────┐
                                │   4. ACTION RESOLVER    │
-                               │ • Semantic Step Match   │
-                               │ • DOM Evidence Mapping  │
+                               │ • Scored Evidence Match │
+                               │ • Confidence Metrics    │
+                               │ • Strict Resolution     │
                                │ • AutomationAction IR   │
                                └────────────┬────────────┘
                                             │
@@ -91,6 +99,7 @@ Modern software testing is bottlenecked by the manual effort required to write, 
                                │ • playwright-bdd        │
                                │ • Native Parallel Run   │
                                │ • Live Locator Auto-Fix │
+                               │ • Browser Validation    │
                                └────────────┬────────────┘
                                             │
                                             ▼
@@ -109,28 +118,33 @@ Modern software testing is bottlenecked by the manual effort required to write, 
 ```mermaid
 flowchart TD
     A[📄 Natural Language Spec / Markdown] --> B[🔍 Document Parser Registry]
-    B --> C{Target URL Provided?}
-    C -- Yes --> D[🌐 Playwright Browser Explorer]
-    D --> E[✨ Discovered DOM Elements & Resilient Locators]
-    C -- No --> F[📝 Document Intent Heuristics]
-    E --> G[🤖 AI Test Designer Agent with TestDesignContext]
-    F --> G
-    G --> H[📋 Structured Test Matrix & Scenarios]
-    H --> I[🧭 ActionResolver: Semantic BDD to Locators]
-    I --> J[🧱 Enterprise Project Generator]
-    J --> K[🥒 features/*.feature]
-    J --> L[🏛️ src/pages/base.page.ts & *.page.ts]
-    J --> M[💉 src/fixtures/base.fixture.ts]
-    J --> N[🪜 src/steps/*.steps.ts]
-    J --> O[📜 generated/*.spec.ts]
-    K & L & M & N --> P[⚙️ playwright-bdd bddgen]
-    P --> Q[🚀 Native Parallel Playwright Execution]
-    Q --> R{All Tests Passed?}
-    R -- Yes --> S[✅ Cucumber & Playwright HTML Reports]
-    R -- No --> T[🩹 Failure Analyzer & Diagnosis]
-    T --> U[🤖 RepairAgent Generates Fixed Selector]
-    U --> V[💾 Auto-Patch Code on Disk]
-    V --> Q
+    B --> C{SHA-256 Unchanged & Cached?}
+    C -- Yes --> D[♻️ Instant Artifact Reuse < 1s]
+    C -- No --> E{Target URL Provided?}
+    E -- Yes --> F[🌐 Playwright Browser Explorer]
+    F --> G[✨ Discovered DOM Elements & Resilient Locators]
+    E -- No --> H[📝 Document Intent Heuristics]
+    G --> I[🤖 AI Test Designer with TestDesignContext]
+    H --> I
+    I --> J[📋 Structured Test Matrix & Scenarios]
+    J --> K[🧭 ActionResolver: Scored BDD to Locators IR]
+    K --> L[🧱 Enterprise Project Generator]
+    L --> M[🥒 features/*.feature]
+    L --> N[🏛️ src/pages/base.page.ts & *.page.ts]
+    L --> O[💉 src/fixtures/base.fixture.ts]
+    L --> P[🪜 src/steps/*.steps.ts]
+    L --> Q[📜 generated/*.spec.ts]
+    M & N & O & P --> R[⚙️ playwright-bdd bddgen]
+    D --> R
+    R --> S[🚀 Native Parallel Playwright Execution]
+    S --> T{All Tests Passed?}
+    T -- Yes --> U[✅ Cucumber & Playwright HTML Reports]
+    T -- No --> V[🩹 Failure Analyzer & Diagnosis]
+    V --> W[🤖 RepairAgent Generates Fixed Selector]
+    W --> X[🔍 Live Browser Validation: validateLocatorOnPage]
+    X -- Valid --> Y[💾 Auto-Patch Code on Disk]
+    X -- Invalid --> W
+    Y --> S
 ```
 
 ---
@@ -163,13 +177,17 @@ flowchart TD
   ```
 - Step definitions destructure `{ loginPage }` directly without manual `new LoginPage(page)` instantiations.
 
-### 4. 🧭 Semantic Action Resolver (`ActionResolver`)
-- Bridges human-written Gherkin steps to live DOM locators using fuzzy matching across element names, roles, text, and attributes.
-- Prioritizes resilient selectors (`data-test`, `getByRole`, `placeholder`, `aria-label`).
+### 4. 🧭 Scored Action Resolver & Strict Resolution (`ActionResolver`)
+- Bridges human-written Gherkin steps to live DOM locators using scored multi-candidate evidence matching.
+- **Strict Resolution Policy**: Unresolved actions emit explicit `test.fail(true)` with diagnostics instead of silent waits, ensuring zero false-positive test passes.
 
-### 5. 🩹 Autonomous Self-Healing Loop
+### 5. ⚡ Incremental Intelligence Gate (`RequirementMemory`)
+- Calculates a deterministic SHA-256 fingerprint for requirement documents.
+- If requirements are unchanged from a previous run, Sentinel intercepts the pipeline and returns cached `AutomationMemory` artifacts in **< 1 second**.
+
+### 6. 🩹 Autonomous Self-Healing Trust Loop (`RepairAgent`)
 - Catches broken locators (e.g. selector typos or DOM refactors) during test execution.
-- Automatically pinpoints the failing line, proposes the correct locator, patches the code on disk, and re-executes tests until green.
+- **Browser Validation Contract**: Executes `validateLocatorOnPage` on a live headless browser to confirm locator presence and visibility before applying code patches on disk.
 
 ---
 
@@ -177,25 +195,24 @@ flowchart TD
 
 ```text
 karsa-sentinel/
-├── assets/                  # Project brand assets (logo, badges)
+├── assets/                  # Brand assets & architecture visualizations
+│   ├── logo.png
+│   └── karsa-sentinel-visualize.png
 ├── features/                # 🥒 Gherkin BDD Feature specifications
 │   └── *.feature
 ├── src/
 │   ├── agents/              # Autonomous agent layer
-│   │   ├── orchestrator/    # Central pipeline coordinator
+│   │   ├── orchestrator/    # Central pipeline coordinator & incremental memory gate
 │   │   ├── explorer/        # Headless web crawler agent
 │   │   ├── test-designer/   # AI test scenario planner
 │   │   ├── bdd-generator/   # Gherkin scenario synthesizer
-│   │   ├── automation/      # Playwright spec generator
 │   │   ├── execution/       # Test runner & self-healing manager
-│   │   ├── repair/          # Locator diagnosis and repair agent
-│   │   └── requirement/     # Requirement extractor agent
+│   │   └── repair/          # Locator diagnosis and live browser validation agent
 │   ├── core/                # Core architecture & contracts
 │   │   ├── models/          # TypeScript domain models
 │   │   ├── schemas/         # Zod validation schemas
 │   │   ├── contracts/       # Interfaces (IAIProvider, IDocumentParser, etc.)
-│   │   ├── logger/          # Categorized real-time debug logger
-│   │   └── pipeline/        # Step execution pipeline
+│   │   └── logger/          # Categorized real-time debug logger
 │   ├── crawler/             # Live browser inspection
 │   │   ├── browser/         # Playwright browser lifecycle manager
 │   │   ├── discovery/       # DOM element extraction engine
@@ -204,7 +221,7 @@ karsa-sentinel/
 │   │   ├── markdown/        # Markdown requirement parser
 │   │   └── parser/          # Parser registry
 │   ├── resolver/            # Semantic BDD to DOM locator mapping
-│   │   └── action/          # ActionResolver implementation
+│   │   └── action/          # ActionResolver scored candidate implementation
 │   ├── generators/          # Code generation engines
 │   │   ├── bdd/             # Gherkin formatter & normalizer
 │   │   ├── page-object/     # BasePage & domain Page Object generator
@@ -223,13 +240,13 @@ karsa-sentinel/
 │   │   ├── reporter/        # Summary result reporter
 │   │   └── failure-analysis/# Failure category classifier (LOCATOR_MISMATCH, etc.)
 │   ├── memory/              # Local memory & caching
-│   │   ├── requirements/    # Intent requirements store
+│   │   ├── requirements/    # Intent requirements store (SHA-256 fingerprinting)
 │   │   ├── application/     # Discovered UI elements cache
-│   │   └── automation/      # Generated test artifacts registry
+│   │   └── automation/      # Generated test artifacts & history registry
 │   ├── providers/           # AI provider adapters
 │   │   ├── nine-router/     # 9Router OpenAI-compatible proxy adapter
 │   │   ├── openai/          # Direct OpenAI GPT-4o adapter
-│   │   ├── gemini/          # Google Gemini 1.5 adapter
+│   │   ├── gemini/          # Google Gemini adapter
 │   │   └── router/          # Dynamic provider router & Mock fallback
 │   ├── cli/                 # Commander.js CLI executable
 │   └── index.ts             # Public library barrel export
@@ -362,9 +379,9 @@ karsa-sentinel run [testPath] [-r, --repair] [-d, --debug]
 
 ---
 
-## 🩹 Autonomous Self-Healing
+## 🩹 Autonomous Self-Healing Trust Loop
 
-When running tests via `karsa-sentinel run` or `npm test`, Sentinel actively monitors test output for selector errors:
+When running tests via `karsa-sentinel run` or `npm test`, Sentinel actively monitors test output for selector errors and executes the **Trust Verification Loop**:
 
 ```text
 $ npx karsa-sentinel run
@@ -376,8 +393,8 @@ Test Run Result: FAILED
 ========================================
 
 🩹 Karsa Sentinel Self-Repair: Attempt 1/3 healing failing test...
-   🔍 Detected Broken Locator: [data-test="error"], [class*="erroor"] in generated/saucedemo-authentication-matrix.spec.ts
-   ✨ Self-Healing Proposal: Replace with [data-test="error"], [class*="error"]
+   🔍 Detected Broken Locator: [data-test="erroor"] in src/steps/login.steps.ts
+   ✨ Live DOM Validation: Headless browser confirms "[data-test=\"error\"]" count: 1, visible: true
    💾 Patched code successfully. Re-running test suite...
 
 ========================================

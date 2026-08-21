@@ -101,12 +101,13 @@ export class ProjectGenerator {
       ]);
       await fs.writeFile(fixturePath, fixtureContent, "utf-8");
 
-      // 7. Output Step Definitions in src/steps/
+      // 7. Output Step Definitions in src/steps/ (unified with ActionResolver)
       const srcStepsDir = path.join(baseDir, "src", "steps");
       await fs.mkdir(srcStepsDir, { recursive: true });
       const stepContent = this.stepGen.generateStepDefinitions(feature, {
         pageFixtureName: pagePropName,
         targetUrl: options.targetUrl,
+        resolvedActions,
       });
       stepPath = path.join(srcStepsDir, `${safeName}.steps.ts`);
       await fs.writeFile(stepPath, stepContent, "utf-8");

@@ -1,16 +1,31 @@
-# Dependencies
+# -----------------------------------------------------------------------------
+# Dependencies & Package Managers
+# -----------------------------------------------------------------------------
 node_modules/
 .pnp
 .pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
-# Build & Distribution Artifacts
+# -----------------------------------------------------------------------------
+# Production & Build Artifacts
+# -----------------------------------------------------------------------------
 dist/
 build/
 out/
 generated/
+*.tsbuildinfo
 *.tgz
+*.tar.gz
+*.zip
 
-# Test Results & Artifacts
+# -----------------------------------------------------------------------------
+# Test Results & BDD Generation Artifacts
+# -----------------------------------------------------------------------------
 coverage/
 test-results/
 playwright-report/
@@ -18,15 +33,36 @@ cucumber-report/
 .features-gen/
 blob-report/
 playwright/.cache/
-.sentinel/
+allure-results/
+allure-report/
+.nyc_output/
+junit.xml
+results.xml
 
-# Environment Variables & Local Secrets
+# -----------------------------------------------------------------------------
+# Sentinel Cache & Memory
+# -----------------------------------------------------------------------------
+.sentinel/
+graphify-out/
+.rtk/
+
+# -----------------------------------------------------------------------------
+# Environment Variables, Secrets & Keys
+# -----------------------------------------------------------------------------
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.test
+!.env.example
 *.pem
+*.key
+*.cert
 
-# IDE & Operating System Files
+# -----------------------------------------------------------------------------
+# IDE, OS & AI Tooling Metadata
+# -----------------------------------------------------------------------------
 .DS_Store
 Thumbs.db
 *.suo
@@ -38,14 +74,23 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+.agents/
+.gemini/
+.claude/
+.cursor/
 
-# Graphify Outputs
-graphify-out/
-
-# Logs & Temporary Backups
+# -----------------------------------------------------------------------------
+# Logs, Temp Files & Backups
+# -----------------------------------------------------------------------------
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.log
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*~
 .README.github.bak

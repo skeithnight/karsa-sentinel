@@ -67,9 +67,19 @@ export const UIElementSchema = z.object({
 
 export type UIElement = z.infer<typeof UIElementSchema>;
 
+// ── Resolution Result ───────────────────────────────────────────────────
+export const ResolutionResultSchema = z.object({
+  status: z.enum(["resolved", "ambiguous", "unresolved"]),
+  confidence: z.number().min(0).max(1),
+  reasons: z.array(z.string()).default([]),
+  elementId: z.string().optional(),
+});
+
+export type ResolutionResult = z.infer<typeof ResolutionResultSchema>;
+
 // ── Automation Action (Intermediate Representation) ─────────────────────
 export const AutomationActionSchema = z.object({
-  type: z.enum(["navigate", "fill", "click", "select", "assert_visible", "assert_text", "assert_url", "wait", "custom"]),
+  type: z.enum(["navigate", "fill", "click", "select", "assert_visible", "assert_text", "assert_url", "wait", "custom", "unresolved"]),
   target: z
     .object({
       semantic: z.string(),
@@ -80,6 +90,7 @@ export const AutomationActionSchema = z.object({
   value: z.string().optional(),
   expected: z.string().optional(),
   comment: z.string().optional(),
+  resolution: ResolutionResultSchema.optional(),
 });
 
 export type AutomationAction = z.infer<typeof AutomationActionSchema>;

@@ -22,7 +22,17 @@
 
 **Karsa Sentinel** is an autonomous AI agent that transforms human-readable requirements (Markdown, PRDs, Jira specs) into enterprise-grade **Playwright BDD test automation suites**. 
 
-It crawls your live web application, extracts resilient DOM locators, designs test matrices using LLMs, resolves semantic actions, and generates production-ready **Gherkin Features**, **Page Objects extending `BasePage`**, **Step Definitions (`createBdd`)**, and **Custom Fixtures (`test.extend`)**.
+It crawls your live web application, extracts resilient DOM locators, designs test matrices using LLMs, resolves semantic actions via scored confidence matching, and generates production-ready **Gherkin Features**, **Page Objects extending `BasePage`**, **Step Definitions (`createBdd`)**, and **Custom Fixtures (`test.extend`)** with **live headless browser self-healing verification**.
+
+---
+
+## 🏛️ Enterprise Architecture & Execution Flow
+
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/skeithnight/karsa-sentinel/main/assets/karsa-sentinel-visualize.png" alt="Karsa Sentinel Architecture & Execution Flow" width="100%" />
+
+</div>
 
 ---
 
@@ -91,7 +101,7 @@ my-project/
 | `karsa-sentinel generate <doc>` | Generate Enterprise BDD suite (features, pages, steps, fixtures) | `npx karsa-sentinel generate ./docs/login.md` |
 | `karsa-sentinel generate <doc> --mode=standalone` | Generate single flat `.spec.ts` without full folder structure | `npx karsa-sentinel generate ./docs/login.md --mode=standalone` |
 | `karsa-sentinel generate <doc> -d` | Generate with real-time DOM & AI debug tracing | `npx karsa-sentinel generate ./docs/login.md -d` |
-| `karsa-sentinel run` | Execute test suite (auto-compiles BDD with `bddgen`) | `npx karsa-sentinel run` |
+| `karsa-sentinel run` | Execute test suite with autonomous live repair loop | `npx karsa-sentinel run` |
 
 ### CLI Options for `generate`:
 - `-m, --mode <mode>`: Generation mode: `enterprise` (default) \| `standalone`.

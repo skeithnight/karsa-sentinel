@@ -135,4 +135,24 @@ describe("ActionResolver & Evidence-Driven Generation", () => {
     expect(spec).toContain("await page.locator('[data-test=\"password\"]').fill('secret_sauce');");
     expect(spec).toContain("await page.locator('[data-test=\"login-button\"]').click();");
   });
+
+  it("should return status unresolved with 0 confidence when step cannot be mapped", () => {
+    const resolver = new ActionResolver();
+    const step: BDDStep = { keyword: "When", text: "user teleports to mars" };
+    const action = resolver.resolve(step, discoveredElements);
+
+    expect(action.type).toBe("unresolved");
+    expect(action.resolution?.status).toBe("unresolved");
+    expect(action.resolution?.confidence).toBe(0);
+  });
+
+  it("should include high confidence rating on strong DOM matches", () => {
+    const resolver = new ActionResolver();
+    const step: BDDStep = { keyword: "When", text: "user enters username `admin`" };
+    const action = resolver.resolve(step, discoveredElements);
+
+    expect(action.type).toBe("fill");
+    expect(action.resolution?.status).toBe("resolved");
+    expect(action.resolution?.confidence).toBeGreaterThan(0.7);
+  });
 });

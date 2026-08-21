@@ -1,8 +1,9 @@
-import type { BDDFeature, BDDStep } from "../../core/models/index.js";
+import type { BDDFeature, BDDStep, AutomationAction } from "../../core/models/index.js";
 
 export interface StepGeneratorOptions {
   pageFixtureName?: string; // e.g. "sauceDemoUserAuthenticationPage"
   targetUrl?: string;
+  resolvedActions?: Map<string, AutomationAction[]>;
 }
 
 export class StepDefinitionGenerator {
@@ -16,13 +17,17 @@ export class StepDefinitionGenerator {
 
     for (const scenario of feature.scenarios) {
       let currentKeyword: "Given" | "When" | "Then" = "Given";
+      const scenarioActions = options.resolvedActions?.get(scenario.id) || [];
 
-      for (const step of scenario.steps) {
+      for (let i = 0; i < scenario.steps.length; i++) {
+        const step = scenario.steps[i];
+        const correspondingAction = scenarioActions[i];
+
         if (step.keyword === "Given" || step.keyword === "When" || step.keyword === "Then") {
           currentKeyword = step.keyword;
         }
 
-        const generated = this.generateStepBlock(step, currentKeyword, fixtureName, options.targetUrl);
+        const generated = this.generateStepBlock(step, currentKeyword, fixtureName, options.targetUrl, correspondingAction);
         if (generated && !seenPatterns.has(generated.pattern)) {
           seenPatterns.add(generated.pattern);
           stepBlocks.push(generated.code);
@@ -44,14 +49,29 @@ ${stepBlocks.join("\n\n")}
     step: BDDStep,
     inferredKeyword: "Given" | "When" | "Then",
     fixtureName: string,
-    targetUrl?: string
+    targetUrl?: string,
+    action?: AutomationAction
   ): { pattern: string; code: string } | null {
     const text = step.text.trim();
     const keyword = inferredKeyword;
     const lower = text.toLowerCase();
 
+    // 0. If ActionResolver determined this step is explicitly unresolved
+    if (action?.type === "unresolved") {
+      const pattern = this.parameterizePattern(text);
+      const reason = action.resolution?.reasons?.join("; ") || "Could not resolve step against DOM evidence";
+      return {
+        pattern: `${keyword}:${pattern}`,
+        code: `${keyword}('${pattern}', async ({ page }) => {
+  // ❌ UNRESOLVED STEP: ${step.text}
+  // Reason: ${reason}
+  test.fail(true, 'Step could not be resolved against live DOM evidence: ${step.text}');
+});`,
+      };
+    }
+
     // 1. Navigation: Given user navigates to {string}
-    if (keyword === "Given" && (lower.includes("navigates to") || lower.includes("on the") || lower.includes("opens"))) {
+    if (keyword === "Given" && (lower.includes("navigates to") || lower.includes("on the") || lower.includes("opens") || lower.includes("visits") || lower.includes("is on"))) {
       const pattern = this.parameterizePattern(text);
       if (pattern.includes("{string}")) {
         return {
@@ -87,30 +107,24 @@ ${stepBlocks.join("\n\n")}
     }
 
     // 3. Fill specific inputs
-    if (lower.includes("enter") || lower.includes("type") || lower.includes("fill")) {
+    if (lower.includes("enter") || lower.includes("type") || lower.includes("fill") || lower.includes("input")) {
       const pattern = this.parameterizePattern(text);
       if (pattern.includes("{string}")) {
         let fieldStatements: string[] = [];
-        fieldStatements.push(`const pageObj = ${fixtureName} as any;`);
-
-        if (lower.includes("empty username") || lower.includes("blank username")) {
-          fieldStatements.push(`if (pageObj.userNameInput) await pageObj.userNameInput.clear();`);
-          fieldStatements.push(`else if (pageObj.usernameInput) await pageObj.usernameInput.clear();`);
-        }
-
-        if (lower.includes("password")) {
-          fieldStatements.push(`if (pageObj.passwordInput) await pageObj.passwordInput.fill(value);`);
-        } else if (lower.includes("username") || lower.includes("email") || lower.includes("user")) {
-          fieldStatements.push(`if (pageObj.userNameInput) await pageObj.userNameInput.fill(value);`);
-          fieldStatements.push(`else if (pageObj.usernameInput) await pageObj.usernameInput.fill(value);`);
+        if (action?.target?.locator) {
+          if (lower.includes("empty") || lower.includes("blank") || lower.includes("clear")) {
+            fieldStatements.push(`await page.locator('${action.target.locator}').clear();`);
+          } else {
+            fieldStatements.push(`await page.locator('${action.target.locator}').fill(value);`);
+          }
         } else {
-          fieldStatements.push(`const input = page.locator('input:visible, textarea:visible').first();`);
-          fieldStatements.push(`await input.fill(value);`);
+          fieldStatements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
+          fieldStatements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
         }
 
         return {
           pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ ${fixtureName}, page }, value: string) => {
+          code: `${keyword}('${pattern}', async ({ page }, value: string) => {
   ${fieldStatements.join("\n  ")}
 });`,
         };
@@ -118,17 +132,19 @@ ${stepBlocks.join("\n\n")}
     }
 
     // 4. Click button: user clicks the Login button
-    if (lower.includes("click") || lower.includes("press") || lower.includes("submit")) {
+    if (lower.includes("click") || lower.includes("press") || lower.includes("submit") || lower.includes("tap")) {
       const pattern = this.parameterizePattern(text);
+      let statements = [];
+      if (action?.target?.locator) {
+        statements.push(`await page.locator('${action.target.locator}').click();`);
+      } else {
+        statements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
+        statements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
+      }
       return {
         pattern: `${keyword}:${pattern}`,
-        code: `${keyword}('${pattern}', async ({ ${fixtureName}, page }) => {
-  const pageObj = ${fixtureName} as any;
-  if (pageObj.loginButton) {
-    await pageObj.loginButton.click();
-  } else {
-    await page.getByRole('button').first().click();
-  }
+        code: `${keyword}('${pattern}', async ({ page }) => {
+  ${statements.join("\n  ")}
 });`,
       };
     }
@@ -158,18 +174,17 @@ ${stepBlocks.join("\n\n")}
     if (lower.includes("header") || lower.includes("title")) {
       const pattern = this.parameterizePattern(text);
       if (pattern.includes("{string}")) {
+        let statements = [];
+        if (action?.target?.locator) {
+          statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(expectedMessage);`);
+        } else {
+          statements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
+          statements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
+        }
         return {
           pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ ${fixtureName}, page }, expectedMessage: string) => {
-  const pageObj = ${fixtureName} as any;
-  if (pageObj.pageTitle) {
-    const titleText = await pageObj.getTitleText().catch(() => '');
-    if (titleText && titleText.includes(expectedMessage)) {
-      expect(titleText).toContain(expectedMessage);
-      return;
-    }
-  }
-  await expect(page.locator('body')).toContainText(expectedMessage);
+          code: `${keyword}('${pattern}', async ({ page }, expectedMessage: string) => {
+  ${statements.join("\n  ")}
 });`,
         };
       }
@@ -179,18 +194,17 @@ ${stepBlocks.join("\n\n")}
     if (lower.includes("error") || lower.includes("display") || lower.includes("show")) {
       const pattern = this.parameterizePattern(text);
       if (pattern.includes("{string}")) {
+        let statements = [];
+        if (action?.target?.locator) {
+          statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(expectedMessage);`);
+        } else {
+          statements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
+          statements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
+        }
         return {
           pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ ${fixtureName}, page }, expectedMessage: string) => {
-  const pageObj = ${fixtureName} as any;
-  if (pageObj.errorMessage) {
-    const errorText = await pageObj.getErrorMessage().catch(() => '');
-    if (errorText && errorText.includes(expectedMessage)) {
-      expect(errorText).toContain(expectedMessage);
-      return;
-    }
-  }
-  await expect(page.locator('body')).toContainText(expectedMessage);
+          code: `${keyword}('${pattern}', async ({ page }, expectedMessage: string) => {
+  ${statements.join("\n  ")}
 });`,
         };
       }

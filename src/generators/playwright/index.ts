@@ -111,10 +111,9 @@ ${testCases}
           if (locator) {
             lines.push(`    await page.locator('${locator}').fill('${value}');`);
           } else {
-            // Fallback: use semantic name as a best-effort locator
             const semantic = action.target?.semantic || "input";
-            lines.push(`    // ⚠️ No UI evidence for "${semantic}" — using best-effort locator`);
-            lines.push(`    await page.getByRole('textbox', { name: /${this.escapeRegex(semantic)}/i }).fill('${value}');`);
+            lines.push(`    // ❌ Strict Resolution Policy: UI evidence missing for "${semantic}"`);
+            lines.push(`    test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${semantic}"');`);
           }
           break;
         }
@@ -125,8 +124,8 @@ ${testCases}
             lines.push(`    await page.locator('${locator}').click();`);
           } else {
             const semantic = action.target?.semantic || "button";
-            lines.push(`    // ⚠️ No UI evidence for "${semantic}" — using best-effort locator`);
-            lines.push(`    await page.getByRole('button', { name: /${this.escapeRegex(semantic)}/i }).click();`);
+            lines.push(`    // ❌ Strict Resolution Policy: UI evidence missing for "${semantic}"`);
+            lines.push(`    test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${semantic}"');`);
           }
           break;
         }
@@ -137,7 +136,9 @@ ${testCases}
           if (locator) {
             lines.push(`    await page.locator('${locator}').selectOption('${value}');`);
           } else {
-            lines.push(`    await page.getByRole('combobox').selectOption('${value}');`);
+            const semantic = action.target?.semantic || "dropdown";
+            lines.push(`    // ❌ Strict Resolution Policy: UI evidence missing for "${semantic}"`);
+            lines.push(`    test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${semantic}"');`);
           }
           break;
         }
@@ -148,7 +149,8 @@ ${testCases}
             lines.push(`    await expect(page.locator('${locator}')).toBeVisible();`);
           } else {
             const semantic = action.target?.semantic || "element";
-            lines.push(`    await expect(page.getByText(/${this.escapeRegex(semantic)}/i).first()).toBeVisible();`);
+            lines.push(`    // ❌ Strict Resolution Policy: UI evidence missing for "${semantic}"`);
+            lines.push(`    test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${semantic}"');`);
           }
           break;
         }
@@ -159,7 +161,9 @@ ${testCases}
           if (locator) {
             lines.push(`    await expect(page.locator('${locator}').first()).toContainText('${expected.replace(/'/g, "\\'")}');`);
           } else {
-            lines.push(`    await expect(page.locator('body')).toContainText('${expected.replace(/'/g, "\\'")}');`);
+            const semantic = action.target?.semantic || "text";
+            lines.push(`    // ❌ Strict Resolution Policy: UI evidence missing for "${semantic}"`);
+            lines.push(`    test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${semantic}"');`);
           }
           break;
         }
@@ -172,6 +176,14 @@ ${testCases}
 
         case "wait": {
           lines.push(`    await page.waitForLoadState('domcontentloaded');`);
+          break;
+        }
+
+        case "unresolved": {
+          const reason = action.resolution?.reasons?.join("; ") || "No matching DOM evidence or semantic action found";
+          lines.push(`    // ❌ UNRESOLVED STEP: ${action.comment || "Unknown"}`);
+          lines.push(`    // Reason: ${reason}`);
+          lines.push(`    test.fail(true, 'Step could not be resolved against live DOM evidence: ${this.escapeRegex(action.comment || "")}');`);
           break;
         }
 
