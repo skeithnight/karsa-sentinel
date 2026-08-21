@@ -1,5 +1,5 @@
 import type { IAIProvider } from "../../core/contracts/index.js";
-import type { BDDFeature, Requirement, TestCase } from "../../core/models/index.js";
+import type { BDDFeature, Requirement, TestCase, TestDesignContext } from "../../core/models/index.js";
 import { OpenAIProvider } from "../openai/index.js";
 import { GeminiProvider } from "../gemini/index.js";
 import { NineRouterProvider } from "../nine-router/index.js";
@@ -18,7 +18,45 @@ export class MockAIProvider implements IAIProvider {
     };
   }
 
-  async generateTestCases(requirement: Requirement): Promise<TestCase[]> {
+  async generateTestCases(context: TestDesignContext): Promise<TestCase[]> {
+    const { requirement, uiEvidence } = context;
+
+    // Generate steps that reference actual discovered elements when available
+    const steps: TestCase["steps"] = [];
+    let stepNum = 1;
+
+    if (uiEvidence.length > 0) {
+      // Use discovered elements to build realistic test steps
+      const fillableElements = uiEvidence.filter((el) => el.tag === "input" || el.tag === "textarea");
+      const clickableElements = uiEvidence.filter((el) => el.tag === "button" || el.tag === "a" || el.role === "button");
+
+      for (const el of fillableElements) {
+        const name = el.name || el.attributes["placeholder"] || el.tag;
+        steps.push({
+          stepNumber: stepNum++,
+          action: `User enters value into ${name} field`,
+          expectedResult: `${name} field contains the entered value`,
+        });
+      }
+
+      for (const el of clickableElements.slice(0, 2)) {
+        const name = el.name || el.text || el.tag;
+        steps.push({
+          stepNumber: stepNum++,
+          action: `User clicks ${name}`,
+          expectedResult: `Application responds to ${name} click`,
+        });
+      }
+    }
+
+    if (steps.length === 0) {
+      steps.push({
+        stepNumber: 1,
+        action: "Perform primary interaction",
+        expectedResult: "Target state is displayed correctly",
+      });
+    }
+
     return [
       {
         id: `tc-${Date.now()}-1`,
@@ -26,13 +64,7 @@ export class MockAIProvider implements IAIProvider {
         title: `Verify ${requirement.title}`,
         description: requirement.description,
         preconditions: [requirement.targetUrl ? `User navigates to ${requirement.targetUrl}` : "User opens the application"],
-        steps: [
-          {
-            stepNumber: 1,
-            action: "Perform primary interaction",
-            expectedResult: "Target state is displayed correctly",
-          },
-        ],
+        steps,
         priority: "high",
         tags: ["smoke", "regression"],
       },

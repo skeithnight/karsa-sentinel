@@ -1,5 +1,5 @@
 import type { IAIProvider } from "../../core/contracts/index.js";
-import type { BDDFeature, Requirement, TestCase } from "../../core/models/index.js";
+import type { BDDFeature, Requirement, TestCase, TestDesignContext } from "../../core/models/index.js";
 import { MockAIProvider } from "../router/index.js";
 
 export class OpenAIProvider implements IAIProvider {
@@ -16,8 +16,8 @@ export class OpenAIProvider implements IAIProvider {
     return this.fallback.generateRequirements(content);
   }
 
-  async generateTestCases(requirement: Requirement): Promise<TestCase[]> {
-    return this.fallback.generateTestCases(requirement);
+  async generateTestCases(context: TestDesignContext): Promise<TestCase[]> {
+    return this.fallback.generateTestCases(context);
   }
 
   async generateBDD(testCases: TestCase[]): Promise<BDDFeature> {

@@ -1,7 +1,16 @@
-import type { BDDFeature } from "../../core/schemas/index.js";
-import type { UIElement } from "../../core/models/index.js";
+import type { BDDFeature, UIElement, AutomationAction } from "../../core/schemas/index.js";
 
+/**
+ * PlaywrightGenerator produces .spec.ts and Page Object files.
+ *
+ * In 0.3.0, spec generation is driven by AutomationAction[] (the IR),
+ * NOT by hardcoded selector heuristics. This makes the generator
+ * fully generic — it works for any web application, not just SauceDemo.
+ */
 export class PlaywrightGenerator {
+  /**
+   * Generate a Page Object class from discovered UI elements.
+   */
   generatePageObject(featureName: string, discoveredElements: UIElement[] = []): string {
     const cleanFeatureName = featureName.replace(/[^a-zA-Z0-9]/g, "");
     const className = cleanFeatureName.endsWith("Page") ? cleanFeatureName : `${cleanFeatureName}Page`;
@@ -38,113 +47,30 @@ ${locatorEntries.join("\n")}
   async waitForPageLoad() {
     await this.page.waitForLoadState('domcontentloaded');
   }
-
-  async login(username = 'standard_user', password = 'secret_sauce') {
-    if (await this.page.locator('[data-test="username"]').count() > 0) {
-      await this.page.fill('[data-test="username"]', username);
-    }
-    if (await this.page.locator('[data-test="password"]').count() > 0) {
-      await this.page.fill('[data-test="password"]', password);
-    }
-    if (await this.page.locator('[data-test="login-button"]').count() > 0) {
-      await this.page.click('[data-test="login-button"]');
-    }
-  }
 }
 `;
   }
 
-  generatePlaywrightSpec(feature: BDDFeature, targetUrl?: string): string {
-    const cleanUrl = targetUrl || "https://www.saucedemo.com/";
+  /**
+   * Generate a complete .spec.ts from a BDDFeature + resolved actions per scenario.
+   *
+   * @param feature - The BDD feature model
+   * @param resolvedActions - Map of scenario ID → AutomationAction[]
+   * @param targetUrl - Fallback URL if not in actions
+   */
+  generateSpec(
+    feature: BDDFeature,
+    resolvedActions: Map<string, AutomationAction[]>,
+    targetUrl?: string
+  ): string {
     const testCases = feature.scenarios
       .filter((s) => s.title.toLowerCase() !== "scenarios" && s.title.toLowerCase() !== "overview")
       .map((scenario) => {
-        const stepActions: string[] = [];
-        stepActions.push(`    // Navigate to target application`);
-        stepActions.push(`    await page.goto('${cleanUrl}');`);
-        stepActions.push(`    await page.waitForLoadState('domcontentloaded');`);
-
-        const scenarioTitleLower = scenario.title.toLowerCase();
-
-        // High-level scenario heuristic handlers
-        if (scenarioTitleLower.includes("locked out")) {
-          stepActions.push(`    // When user enters locked out credentials`);
-          stepActions.push(`    await page.locator('[data-test="username"]').fill('locked_out_user');`);
-          stepActions.push(`    await page.locator('[data-test="password"]').fill('secret_sauce');`);
-          stepActions.push(`    await page.locator('[data-test="login-button"]').click();`);
-          stepActions.push(`    // Then error banner is displayed`);
-          stepActions.push(`    await expect(page.locator('[data-test="error"], .error-message-container').first()).toBeVisible();`);
-          stepActions.push(`    await expect(page.locator('[data-test="error"], .error-message-container').first()).toContainText('locked out');`);
-        } else if (scenarioTitleLower.includes("standard user") || scenarioTitleLower.includes("successful login")) {
-          stepActions.push(`    // When user enters valid credentials`);
-          stepActions.push(`    await page.locator('[data-test="username"]').fill('standard_user');`);
-          stepActions.push(`    await page.locator('[data-test="password"]').fill('secret_sauce');`);
-          stepActions.push(`    await page.locator('[data-test="login-button"]').click();`);
-          stepActions.push(`    // Then user is redirected to inventory`);
-          stepActions.push(`    await expect(page).toHaveURL(/.*inventory/);`);
-        } else if (scenarioTitleLower.includes("missing username") || scenarioTitleLower.includes("empty username")) {
-          stepActions.push(`    // When user enters password without username`);
-          stepActions.push(`    await page.locator('[data-test="password"]').fill('secret_sauce');`);
-          stepActions.push(`    await page.locator('[data-test="login-button"]').click();`);
-          stepActions.push(`    // Then error message is displayed`);
-          stepActions.push(`    await expect(page.locator('[data-test="error"], .error-message-container').first()).toBeVisible();`);
-        } else if (scenarioTitleLower.includes("cart") || scenarioTitleLower.includes("backpack")) {
-          stepActions.push(`    // Login and add item to cart`);
-          stepActions.push(`    await page.locator('[data-test="username"]').fill('standard_user');`);
-          stepActions.push(`    await page.locator('[data-test="password"]').fill('secret_sauce');`);
-          stepActions.push(`    await page.locator('[data-test="login-button"]').click();`);
-          stepActions.push(`    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();`);
-          stepActions.push(`    await expect(page.locator('.shopping_cart_badge')).toHaveText('1');`);
-        } else {
-          // Fine-grained step parser
-          for (const step of scenario.steps) {
-            const text = step.text.toLowerCase();
-
-            if (text.includes("enter") || text.includes("type") || text.includes("fill")) {
-              if (text.includes("username") || text.includes("user")) {
-                const usernameMatch = step.text.match(/['"`]([^'"`]+)['"`]/) || step.text.match(/username\s+(\w+)/i);
-                const usernameVal = usernameMatch ? usernameMatch[1] : "standard_user";
-                stepActions.push(`    // ${step.keyword} ${step.text}`);
-                stepActions.push(`    await page.locator('[data-test="username"]').fill('${usernameVal}');`);
-              } else if (text.includes("password")) {
-                const passMatch = step.text.match(/['"`]([^'"`]+)['"`]/) || step.text.match(/password\s+(\w+)/i);
-                const passVal = passMatch ? passMatch[1] : "secret_sauce";
-                stepActions.push(`    // ${step.keyword} ${step.text}`);
-                stepActions.push(`    await page.locator('[data-test="password"]').fill('${passVal}');`);
-              }
-            } else if (text.includes("click") || text.includes("press") || text.includes("submit") || text.includes("login button")) {
-              stepActions.push(`    // ${step.keyword} ${step.text}`);
-              if (text.includes("login") || text.includes("sign in")) {
-                stepActions.push(`    await page.locator('[data-test="login-button"]').click();`);
-              } else if (text.includes("add to cart") || text.includes("backpack")) {
-                stepActions.push(`    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();`);
-              } else {
-                stepActions.push(`    await page.locator('button, [type="submit"]').first().click();`);
-              }
-            } else if (text.includes("redirect") || text.includes("inventory") || text.includes("dashboard") || text.includes("url")) {
-              stepActions.push(`    // ${step.keyword} ${step.text}`);
-              if (text.includes("inventory")) {
-                stepActions.push(`    await expect(page).toHaveURL(/.*inventory/);`);
-              } else {
-                stepActions.push(`    await page.waitForLoadState('domcontentloaded');`);
-              }
-            } else if (text.includes("error") || text.includes("required") || text.includes("locked out") || text.includes("warning")) {
-              stepActions.push(`    // ${step.keyword} ${step.text}`);
-              const errorMsgMatch = step.text.match(/['"`]([^'"`]+)['"`]/);
-              const expectedMsg = errorMsgMatch ? errorMsgMatch[1] : "";
-              stepActions.push(`    await expect(page.locator('[data-test="error"], .error-message-container').first()).toBeVisible();`);
-              if (expectedMsg && expectedMsg.length > 3) {
-                stepActions.push(`    await expect(page.locator('[data-test="error"], .error-message-container').first()).toContainText('${expectedMsg.replace(/'/g, "\\'")}');`);
-              }
-            } else {
-              stepActions.push(`    // ${step.keyword} ${step.text}`);
-              stepActions.push(`    await page.waitForLoadState('domcontentloaded');`);
-            }
-          }
-        }
+        const actions = resolvedActions.get(scenario.id) || [];
+        const lines = this.actionsToPlaywright(actions, targetUrl);
 
         return `  test('${scenario.title.replace(/'/g, "\\'")}', async ({ page }) => {
-${stepActions.join("\n")}
+${lines.join("\n")}
   });`;
       })
       .join("\n\n");
@@ -155,5 +81,136 @@ test.describe('${feature.title.replace(/'/g, "\\'")}', () => {
 ${testCases}
 });
 `;
+  }
+
+  /**
+   * Convert a list of AutomationActions into Playwright code lines.
+   * This is the core deterministic transformation — no heuristics, no hardcoding.
+   */
+  private actionsToPlaywright(actions: AutomationAction[], fallbackUrl?: string): string[] {
+    const lines: string[] = [];
+    let hasNavigated = false;
+
+    for (const action of actions) {
+      if (action.comment) {
+        lines.push(`    // ${action.comment}`);
+      }
+
+      switch (action.type) {
+        case "navigate": {
+          const url = action.value || fallbackUrl || "/";
+          lines.push(`    await page.goto('${url}');`);
+          lines.push(`    await page.waitForLoadState('domcontentloaded');`);
+          hasNavigated = true;
+          break;
+        }
+
+        case "fill": {
+          const locator = action.target?.locator;
+          const value = action.value || "";
+          if (locator) {
+            lines.push(`    await page.locator('${locator}').fill('${value}');`);
+          } else {
+            // Fallback: use semantic name as a best-effort locator
+            const semantic = action.target?.semantic || "input";
+            lines.push(`    // ⚠️ No UI evidence for "${semantic}" — using best-effort locator`);
+            lines.push(`    await page.getByRole('textbox', { name: /${this.escapeRegex(semantic)}/i }).fill('${value}');`);
+          }
+          break;
+        }
+
+        case "click": {
+          const locator = action.target?.locator;
+          if (locator) {
+            lines.push(`    await page.locator('${locator}').click();`);
+          } else {
+            const semantic = action.target?.semantic || "button";
+            lines.push(`    // ⚠️ No UI evidence for "${semantic}" — using best-effort locator`);
+            lines.push(`    await page.getByRole('button', { name: /${this.escapeRegex(semantic)}/i }).click();`);
+          }
+          break;
+        }
+
+        case "select": {
+          const locator = action.target?.locator;
+          const value = action.value || "";
+          if (locator) {
+            lines.push(`    await page.locator('${locator}').selectOption('${value}');`);
+          } else {
+            lines.push(`    await page.getByRole('combobox').selectOption('${value}');`);
+          }
+          break;
+        }
+
+        case "assert_visible": {
+          const locator = action.target?.locator;
+          if (locator) {
+            lines.push(`    await expect(page.locator('${locator}')).toBeVisible();`);
+          } else {
+            const semantic = action.target?.semantic || "element";
+            lines.push(`    await expect(page.getByText(/${this.escapeRegex(semantic)}/i).first()).toBeVisible();`);
+          }
+          break;
+        }
+
+        case "assert_text": {
+          const locator = action.target?.locator;
+          const expected = action.expected || "";
+          if (locator) {
+            lines.push(`    await expect(page.locator('${locator}').first()).toContainText('${expected.replace(/'/g, "\\'")}');`);
+          } else {
+            lines.push(`    await expect(page.locator('body')).toContainText('${expected.replace(/'/g, "\\'")}');`);
+          }
+          break;
+        }
+
+        case "assert_url": {
+          const expected = action.expected || ".*";
+          lines.push(`    await expect(page).toHaveURL(/${expected.replace(/\//g, "\\/")}/);`);
+          break;
+        }
+
+        case "wait": {
+          lines.push(`    await page.waitForLoadState('domcontentloaded');`);
+          break;
+        }
+
+        case "custom": {
+          lines.push(`    // Custom action: ${action.value || "unspecified"}`);
+          break;
+        }
+      }
+    }
+
+    // If no navigate was found, prepend a goto
+    if (!hasNavigated && fallbackUrl) {
+      lines.unshift(`    await page.waitForLoadState('domcontentloaded');`);
+      lines.unshift(`    await page.goto('${fallbackUrl}');`);
+      lines.unshift(`    // Navigate to target application`);
+    }
+
+    return lines;
+  }
+
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // ── Legacy compatibility ──────────────────────────────────────────────
+  // Kept for backward compatibility during migration. Remove in 0.4.0.
+  generatePlaywrightSpec(feature: BDDFeature, targetUrl?: string): string {
+    // Generate empty resolved actions — produces skeleton specs
+    const resolvedActions = new Map<string, AutomationAction[]>();
+    for (const scenario of feature.scenarios) {
+      const actions: AutomationAction[] = [];
+      for (const step of scenario.steps) {
+        actions.push({
+          type: "wait",
+          comment: `${step.keyword} ${step.text}`,
+        });
+      }
+      resolvedActions.set(scenario.id, actions);
+    }
+    return this.generateSpec(feature, resolvedActions, targetUrl);
   }
 }

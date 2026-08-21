@@ -4,7 +4,7 @@
 
 # 🛡️ Karsa Sentinel
 
-### **Autonomous AI QA Automation Agent & Intent-to-Execution Engine**
+### **Autonomous AI QA Automation Agent & Enterprise BDD Test Generator**
 
 *AI Proposes. Sentinel Verifies.*
 
@@ -12,7 +12,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.7-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![Playwright](https://img.shields.io/badge/playwright-1.50-green?style=flat-square)](https://playwright.dev/)
+[![Playwright](https://img.shields.io/badge/playwright-1.50%2B-green?style=flat-square)](https://playwright.dev/)
+[![playwright-bdd](https://img.shields.io/badge/playwright--bdd-9.2-purple?style=flat-square)](https://vitalets.github.io/playwright-bdd/)
 
 </div>
 
@@ -20,11 +21,12 @@
 
 ## 📑 Table of Contents
 - [📖 Product Vision & Philosophy](#-product-vision--philosophy)
-- [🏛️ System Architecture](#️-system-architecture)
+- [🏛️ Enterprise Architecture](#️-enterprise-architecture)
 - [🔄 Autonomous Pipeline Flow](#-autonomous-pipeline-flow)
 - [🚀 Key Capabilities](#-key-capabilities)
 - [📁 Project Structure](#-project-structure)
 - [⚡ Quick Start Guide](#-quick-start-guide)
+- [🏗️ Generation Modes (`enterprise` vs `standalone`)](#️-generation-modes-enterprise-vs-standalone)
 - [🤖 Supported AI Providers](#-supported-ai-providers)
 - [⚙️ Configuration (`.env`)](#️-configuration-env)
 - [💻 CLI Reference](#-cli-reference)
@@ -41,14 +43,14 @@
 
 Modern software testing is bottlenecked by the manual effort required to write, scaffold, and maintain end-to-end automation scripts as user interfaces evolve.
 
-**Karsa Sentinel** bridges product intent and executable test verification. It takes natural language requirements (Markdown, Jira specs, PRDs) and pairs LLM intelligence with real browser DOM inspection to output deterministic, resilient **Playwright TypeScript test suites**, **BDD Gherkin features**, and **typed Page Objects** with **autonomous self-repair capabilities**.
+**Karsa Sentinel** bridges product intent and executable test verification. It takes natural language requirements (Markdown, Jira specs, PRDs) and pairs LLM intelligence with real browser DOM inspection to output deterministic, enterprise-grade **Playwright BDD test suites (`playwright-bdd`)**, **OOP Page Objects extending `BasePage`**, **Step Definitions (`createBdd`)**, and **Typed Dependency Injection Fixtures (`test.extend`)** with **autonomous self-repair capabilities**.
 
 > ### 💡 Core Tenet: *AI Proposes. Sentinel Verifies.*
-> LLMs generate hypotheses (test scenarios and selectors). Sentinel independently verifies them against the live DOM and Playwright test assertions before committing code.
+> LLMs generate hypotheses (test scenarios and semantic intent). Sentinel independently discovers live DOM elements, resolves semantic actions to resilient selectors, and verifies test execution with native Playwright assertions before committing code.
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ Enterprise Architecture
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -59,35 +61,44 @@ Modern software testing is bottlenecked by the manual effort required to write, 
                ▼                            ▼                            ▼
   ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
   │   1. INTENT INGESTION   │  │   2. DOM EXPLORATION    │  │     3. AI SYNTHESIS     │
-  │ • Markdown Parser       │  │ • Playwright Crawler    │  │ • 9Router AI Proxy      │
-  │ • Jira / PRD Extractors │  │ • Accessibility Tree    │  │ • OpenAI / Gemini       │
-  │ • Target URL Resolver   │  │ • Resilient Locators    │  │ • Zod Schema Validation │
+  │ • Markdown Parser       │  │ • Headless Crawler      │  │ • 9Router Proxy (mimo)  │
+  │ • Jira / PRD Extractors │  │ • Accessibility Tree    │  │ • OpenAI (gpt-4o)       │
+  │ • URL & Scenario Parse  │  │ • Resilient Locators    │  │ • Gemini 1.5 Pro        │
   └────────────┬────────────┘  └────────────┬────────────┘  └────────────┬────────────┘
                │                            │                            │
                └────────────────────────────┼────────────────────────────┘
                                             │
                                             ▼
                                ┌─────────────────────────┐
-                               │ 4. ARTIFACT GENERATION  │
-                               │ • Typed Page Objects    │
-                               │ • Granular 1:1 Specs    │
-                               │ • BDD Gherkin Features  │
+                               │   4. ACTION RESOLVER    │
+                               │ • Semantic Step Match   │
+                               │ • DOM Evidence Mapping  │
+                               │ • AutomationAction IR   │
                                └────────────┬────────────┘
                                             │
                                             ▼
                                ┌─────────────────────────┐
-                               │  5. EXECUTION & REPAIR  │
-                               │ • Playwright Test Runner│
-                               │ • Failure Analyzer      │
-                               │ • Live Auto-Patcher     │
+                               │ 5. ARTIFACT GENERATION  │
+                               │ • Gherkin .feature      │
+                               │ • BasePage & Page Object│
+                               │ • Step Definitions      │
+                               │ • base.fixture.ts (DI)  │
                                └────────────┬────────────┘
                                             │
                                             ▼
                                ┌─────────────────────────┐
-                               │  6. REPORTS & TRACING   │
-                               │ • Interactive HTML      │
-                               │ • Real-time Debug Logs  │
-                               │ • Executive Summaries   │
+                               │  6. BDDGEN & EXECUTION  │
+                               │ • playwright-bdd        │
+                               │ • Native Parallel Run   │
+                               │ • Live Locator Auto-Fix │
+                               └────────────┬────────────┘
+                                            │
+                                            ▼
+                               ┌─────────────────────────┐
+                               │  7. REPORTS & TRACING   │
+                               │ • Cucumber HTML Report  │
+                               │ • Playwright HTML Report│
+                               │ • Real-time Trace Logs  │
                                └─────────────────────────┘
 ```
 
@@ -101,46 +112,64 @@ flowchart TD
     B --> C{Target URL Provided?}
     C -- Yes --> D[🌐 Playwright Browser Explorer]
     D --> E[✨ Discovered DOM Elements & Resilient Locators]
-    C -- No --> F[📝 Document Heuristics]
-    E --> G[🤖 AI Test Designer Agent]
+    C -- No --> F[📝 Document Intent Heuristics]
+    E --> G[🤖 AI Test Designer Agent with TestDesignContext]
     F --> G
     G --> H[📋 Structured Test Matrix & Scenarios]
-    H --> I[🧱 Code Generator Engine]
-    I --> J[📦 generated/pages/*Page.ts]
-    I --> K[📜 generated/*.spec.ts]
-    I --> L[🥒 generated/*.feature]
-    K --> M[🚀 Playwright Test Execution]
-    M --> N{All Tests Passed?}
-    N -- Yes --> O[✅ Interactive HTML Report Generated]
-    N -- No --> P[🩹 Failure Analyzer & Diagnosis]
-    P --> Q[🤖 RepairAgent Generates Fixed Selector]
-    Q --> R[💾 Auto-Patch Spec File on Disk]
-    R --> M
+    H --> I[🧭 ActionResolver: Semantic BDD to Locators]
+    I --> J[🧱 Enterprise Project Generator]
+    J --> K[🥒 features/*.feature]
+    J --> L[🏛️ src/pages/base.page.ts & *.page.ts]
+    J --> M[💉 src/fixtures/base.fixture.ts]
+    J --> N[🪜 src/steps/*.steps.ts]
+    J --> O[📜 generated/*.spec.ts]
+    K & L & M & N --> P[⚙️ playwright-bdd bddgen]
+    P --> Q[🚀 Native Parallel Playwright Execution]
+    Q --> R{All Tests Passed?}
+    R -- Yes --> S[✅ Cucumber & Playwright HTML Reports]
+    R -- No --> T[🩹 Failure Analyzer & Diagnosis]
+    T --> U[🤖 RepairAgent Generates Fixed Selector]
+    U --> V[💾 Auto-Patch Code on Disk]
+    V --> Q
 ```
 
 ---
 
 ## 🚀 Key Capabilities
 
-### 1. 🌐 Live Web Explorer & DOM Evidence (Phase 2)
-- Automatically launches headless Chromium when a `Target URL` is provided in the intent document.
-- Scans all interactive inputs, buttons, error containers, and headings.
-- Ranks selectors by Playwright resiliency:
-  1. `data-test` / `data-testid` (`[data-test="..."]`, confidence: `0.99`)
-  2. `getByRole` with accessible names (`role=button[name="..."]`, confidence: `0.95`)
-  3. `placeholder` & `aria-label` (confidence: `0.88`)
-  4. Short text & Semantic CSS
+### 1. 🥒 Enterprise BDD with `playwright-bdd` (`bddgen`)
+- Human-readable Gherkin `.feature` files serve as the **first-class executable test specification**.
+- `bddgen` transpiles `.feature` files and step definitions into native Playwright specs under `.features-gen/`.
+- Full retention of all native Playwright capabilities:
+  - Parallel execution across all CPU cores (`fullyParallel: true`)
+  - Trace Viewer (`trace: 'retain-on-failure'`)
+  - Interactive UI mode (`npx playwright test --ui`)
+  - Cross-browser testing (Chromium, Firefox, WebKit)
 
-### 2. 📑 Granular 1:1 Scenario & Page Object Generation
-- Generates dedicated typed **Page Object classes** under `generated/pages/` (e.g. `SauceDemoAuthenticationMatrixPage.ts`).
-- Generates individual `test('Scenario ...', async ({ page }) => { ... })` blocks for every scenario in the document with real step actions and assertions.
+### 2. 🏛️ Page Object Model (POM) + `BasePage` Hierarchy
+- Generates abstract **`BasePage`** providing `navigate()`, non-blocking `getErrorMessage()`, and `getTitleText()`.
+- Generates domain Page Objects extending `BasePage` with:
+  - Strongly typed locators (`readonly usernameInput: Locator;`)
+  - Auto-synthesized action methods (`login(username, password)`, `submitForm(data)`, `isLoaded()`)
 
-### 3. 🩹 Autonomous Self-Healing Loop
-- Catches broken locators (e.g. selector typos or UI refactors) during test execution.
-- Automatically pinpoints the failing line, proposes the correct locator, patches the `.spec.ts` file on disk, and re-executes the test until it passes.
+### 3. 💉 Zero-Boilerplate Fixture Dependency Injection (`base.fixture.ts`)
+- Extends Playwright's `test` runner with typed Page Object fixtures:
+  ```typescript
+  export const test = baseTest.extend<Pages>({
+    loginPage: async ({ page }, use) => {
+      await use(new LoginPage(page));
+    },
+  });
+  ```
+- Step definitions destructure `{ loginPage }` directly without manual `new LoginPage(page)` instantiations.
 
-### 4. 🐞 Real-Time Debug Tracing (`-d`)
-- Full visibility into HTTP payloads, token usage, live DOM discovery candidates, and JSON extraction traces.
+### 4. 🧭 Semantic Action Resolver (`ActionResolver`)
+- Bridges human-written Gherkin steps to live DOM locators using fuzzy matching across element names, roles, text, and attributes.
+- Prioritizes resilient selectors (`data-test`, `getByRole`, `placeholder`, `aria-label`).
+
+### 5. 🩹 Autonomous Self-Healing Loop
+- Catches broken locators (e.g. selector typos or DOM refactors) during test execution.
+- Automatically pinpoints the failing line, proposes the correct locator, patches the code on disk, and re-executes tests until green.
 
 ---
 
@@ -149,6 +178,8 @@ flowchart TD
 ```text
 karsa-sentinel/
 ├── assets/                  # Project brand assets (logo, badges)
+├── features/                # 🥒 Gherkin BDD Feature specifications
+│   └── *.feature
 ├── src/
 │   ├── agents/              # Autonomous agent layer
 │   │   ├── orchestrator/    # Central pipeline coordinator
@@ -172,12 +203,23 @@ karsa-sentinel/
 │   ├── documents/           # Intent document parsers
 │   │   ├── markdown/        # Markdown requirement parser
 │   │   └── parser/          # Parser registry
+│   ├── resolver/            # Semantic BDD to DOM locator mapping
+│   │   └── action/          # ActionResolver implementation
 │   ├── generators/          # Code generation engines
-│   │   ├── bdd/             # Gherkin formatter
-│   │   ├── playwright/      # Page Object & Playwright spec generator
-│   │   └── project/         # Output file scaffolder
+│   │   ├── bdd/             # Gherkin formatter & normalizer
+│   │   ├── page-object/     # BasePage & domain Page Object generator
+│   │   ├── fixture/         # base.fixture.ts DI generator
+│   │   ├── steps/           # playwright-bdd createBdd step generator
+│   │   ├── playwright/      # Standalone Playwright spec generator
+│   │   └── project/         # Enterprise suite orchestrator
+│   ├── fixtures/            # 💉 Dependency Injection fixture bindings
+│   │   └── base.fixture.ts
+│   ├── pages/               # 📦 Domain Page Objects (LoginPage, etc.)
+│   │   └── base.page.ts
+│   ├── steps/               # 🪜 Gherkin step definitions (createBdd)
+│   │   └── *.steps.ts
 │   ├── execution/           # Test execution & triage
-│   │   ├── runner/          # Playwright test process runner
+│   │   ├── runner/          # Playwright test process runner (auto-runs bddgen)
 │   │   ├── reporter/        # Summary result reporter
 │   │   └── failure-analysis/# Failure category classifier (LOCATOR_MISMATCH, etc.)
 │   ├── memory/              # Local memory & caching
@@ -191,10 +233,9 @@ karsa-sentinel/
 │   │   └── router/          # Dynamic provider router & Mock fallback
 │   ├── cli/                 # Commander.js CLI executable
 │   └── index.ts             # Public library barrel export
-├── scripts/                 # Publishing hooks (prepare-npm-readme.js, restore-readme.js)
-├── graphify-out/            # Persistent knowledge graph (graph.html, GRAPH_REPORT.md)
-├── docs/                    # Architectural specs, blueprints & example intent docs
-└── tests/                   # Vitest unit test suites
+├── playwright.config.ts     # ⚙️ defineBddConfig & Cucumber HTML report config
+├── package.json
+└── tsconfig.json
 ```
 
 ---
@@ -205,7 +246,7 @@ karsa-sentinel/
 ```bash
 npx karsa-sentinel init
 ```
-*Automatically creates `playwright.config.ts` (with HTML reporting and `dotenv`), `.env.example`, starter specs, and npm scripts.*
+*Automatically creates `playwright.config.ts` (with `defineBddConfig` & HTML reports), `src/pages/base.page.ts`, `src/fixtures/base.fixture.ts`, `.env.example`, and npm scripts.*
 
 ### 2. Write your requirement (`docs/login.md`)
 ```markdown
@@ -234,15 +275,24 @@ npx karsa-sentinel init
 
 ### 3. Generate & Run
 ```bash
-# Generate BDD Features, Page Objects & Playwright Specs
+# Generate Enterprise BDD Features, Page Objects, Fixtures & Step Definitions
 npm run generate
 
-# Run tests with Autonomous Self-Healing
+# Run tests (auto-compiles with bddgen and executes with Playwright)
 npm test
 
 # Open interactive HTML report
 npm run report
 ```
+
+---
+
+## 🏗️ Generation Modes (`enterprise` vs `standalone`)
+
+| Mode | Command | Output Structure | Best For |
+| :--- | :--- | :--- | :--- |
+| **`enterprise`** *(Default)* | `karsa-sentinel generate <doc>` | `features/*.feature`<br>`src/pages/*.page.ts`<br>`src/fixtures/base.fixture.ts`<br>`src/steps/*.steps.ts` | Production test suites, maintainable POM architecture, multi-page web applications |
+| **`standalone`** | `karsa-sentinel generate <doc> --mode=standalone` | `generated/*.feature`<br>`generated/*.spec.ts`<br>`generated/pages/*Page.ts` | Quick prototyping, single-file scripts, lightweight verification |
 
 ---
 
@@ -285,26 +335,27 @@ DEBUG=false
 ## 💻 CLI Reference
 
 ### `karsa-sentinel init`
-Initializes workspace with Playwright configuration, HTML reports, and sample specs.
+Initializes workspace with Enterprise BDD configuration, `BasePage`, typed fixtures, and sample specs.
 ```bash
 karsa-sentinel init [-d]
 ```
 
 ### `karsa-sentinel generate <documentPath>`
-Generates BDD features, Page Objects, and Playwright tests from an intent document.
+Generates BDD features, Page Objects, step definitions, and fixtures from an intent document.
 ```bash
 karsa-sentinel generate <documentPath> [options]
 ```
 
 #### Options:
+- `-m, --mode <mode>`: Generation mode: `enterprise` (default) | `standalone`.
 - `-d, --debug`: Enable detailed debug mode with verbose log tracing.
 - `-o, --output <dir>`: Directory where generated files will be written *(default: `generated`)*.
 - `-p, --provider <name>`: Override AI provider (`9router` | `openai` | `gemini` | `mock`).
-- `-m, --model <name>`: Override AI model name (e.g. `mimo`, `gpt-4o`).
+- `--model <name>`: Override AI model name (e.g. `mimo`, `gpt-4o`).
 - `--skip-crawl`: Skip live browser DOM exploration.
 
 ### `karsa-sentinel run [testPath]`
-Executes Playwright tests with autonomous failure diagnosis and live self-repair.
+Executes Playwright tests (auto-compiles with `bddgen`) with autonomous failure diagnosis and live self-repair.
 ```bash
 karsa-sentinel run [testPath] [-r, --repair] [-d, --debug]
 ```
@@ -318,7 +369,7 @@ When running tests via `karsa-sentinel run` or `npm test`, Sentinel actively mon
 ```text
 $ npx karsa-sentinel run
 
-🛡️  Karsa Sentinel: Running test suite (generated)...
+🛡️  Karsa Sentinel: Running test suite ...
 
 ========================================
 Test Run Result: FAILED
@@ -327,7 +378,7 @@ Test Run Result: FAILED
 🩹 Karsa Sentinel Self-Repair: Attempt 1/3 healing failing test...
    🔍 Detected Broken Locator: [data-test="error"], [class*="erroor"] in generated/saucedemo-authentication-matrix.spec.ts
    ✨ Self-Healing Proposal: Replace with [data-test="error"], [class*="error"]
-   💾 Patched saucedemo-authentication-matrix.spec.ts successfully. Re-running test suite...
+   💾 Patched code successfully. Re-running test suite...
 
 ========================================
 Test Run Result: PASSED
@@ -355,7 +406,7 @@ Run any command with the **`-d`** flag to inspect the entire agent thought proce
 [DEBUG:9ROUTER:HTTP] Sending POST to http://localhost:20218/v1/chat/completions with model [mimo]
 [DEBUG:9ROUTER:USAGE] Tokens: 3112 (prompt: 2469, completion: 643)
 [DEBUG:JSON:EXTRACT_SUCCESS] Successfully parsed JSON structure
-[DEBUG:ORCHESTRATOR:COMPLETE] Wrote artifacts to generated/
+[DEBUG:ORCHESTRATOR:COMPLETE] Wrote artifacts to features/, src/pages/, src/steps/, src/fixtures/
 ```
 
 ---
@@ -377,12 +428,13 @@ const provider = new NineRouterProvider({
 const orchestrator = new SentinelOrchestrator(provider);
 const result = await orchestrator.generate({
   documentPath: "./docs/login.md",
-  outputDirectory: "./generated",
+  mode: "enterprise",
 });
 
 console.log("Feature created at:    ", result.featureFile);
-console.log("Spec created at:       ", result.specFile);
+console.log("Steps created at:      ", result.stepFile);
 console.log("Page Object created at:", result.pageObjectFile);
+console.log("Fixture created at:    ", result.fixtureFile);
 ```
 
 ---

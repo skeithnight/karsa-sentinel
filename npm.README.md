@@ -4,16 +4,25 @@
 
 # 🛡️ Karsa Sentinel
 
-**Autonomous AI QA Automation Agent & Intent-to-Execution Engine**
+**Autonomous AI QA Automation Agent & Enterprise BDD Test Generator**
 
 *AI Proposes. Sentinel Verifies.*
 
 [![npm version](https://img.shields.io/npm/v/karsa-sentinel.svg?style=flat-square&color=cb3837)](https://www.npmjs.com/package/karsa-sentinel)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://github.com/skeithnight/karsa-sentinel/blob/main/LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
-[![Playwright](https://img.shields.io/badge/playwright-1.50-green?style=flat-square)](https://playwright.dev/)
+[![Playwright](https://img.shields.io/badge/playwright-1.50%2B-green?style=flat-square)](https://playwright.dev/)
+[![playwright-bdd](https://img.shields.io/badge/playwright--bdd-9.2-purple?style=flat-square)](https://vitalets.github.io/playwright-bdd/)
 
 </div>
+
+---
+
+## 🌟 What is Karsa Sentinel?
+
+**Karsa Sentinel** is an autonomous AI agent that transforms human-readable requirements (Markdown, PRDs, Jira specs) into enterprise-grade **Playwright BDD test automation suites**. 
+
+It crawls your live web application, extracts resilient DOM locators, designs test matrices using LLMs, resolves semantic actions, and generates production-ready **Gherkin Features**, **Page Objects extending `BasePage`**, **Step Definitions (`createBdd`)**, and **Custom Fixtures (`test.extend`)**.
 
 ---
 
@@ -23,7 +32,7 @@
 ```bash
 npx karsa-sentinel init
 ```
-*Scaffolds `playwright.config.ts` (with HTML reporting), creates `.env.example`, starter specs, and npm scripts.*
+*Scaffolds `playwright.config.ts` (with `playwright-bdd` & HTML reports), `src/pages/base.page.ts`, `src/fixtures/base.fixture.ts`, `.env.example`, and npm scripts.*
 
 ### 2. Configure AI Provider in `.env`
 ```env
@@ -37,12 +46,12 @@ NINE_ROUTER_MODEL=mimo
 BASE_URL=https://www.saucedemo.com
 ```
 
-### 3. Generate & Run Automation
+### 3. Generate & Run Enterprise BDD Tests
 ```bash
-# Generate BDD Feature, Page Objects & Playwright Spec from Markdown
+# Generate Gherkin Features, Typed Page Objects, Fixtures & Step Definitions
 npm run generate
 
-# Run tests with Autonomous Self-Healing
+# Run tests (auto-compiles BDD and executes with Playwright)
 npm test
 
 # Open interactive HTML report
@@ -51,25 +60,50 @@ npm run report
 
 ---
 
-## 💻 CLI Commands
+## 🏗️ Generated Enterprise Architecture
+
+When running in **Enterprise Mode** (default), Karsa Sentinel generates a clean, modular structure:
+
+```text
+my-project/
+├── features/                      # 🥒 Gherkin Feature Specifications
+│   └── user-authentication.feature
+├── src/
+│   ├── fixtures/
+│   │   └── base.fixture.ts        # 💉 Typed Page Object Dependency Injection (test.extend)
+│   ├── pages/
+│   │   ├── base.page.ts           # 🏛️ Abstract BasePage (navigate, getErrorMessage, getTitleText)
+│   │   └── user-authentication.page.ts # 📦 Typed Locators & Action Methods (login, isLoaded)
+│   └── steps/
+│       └── user-authentication.steps.ts # 🪜 Parameterized Step Definitions (createBdd)
+├── generated/                     # 📜 Standalone Playwright Spec (.spec.ts fallback)
+├── playwright.config.ts           # ⚙️ defineBddConfig & Cucumber HTML Reporter
+└── .env.example
+```
+
+---
+
+## 💻 CLI Reference
 
 | Command | Description | Example |
 | :--- | :--- | :--- |
-| `karsa-sentinel init` | Configure workspace with Playwright & sample specs | `npx karsa-sentinel init` |
-| `karsa-sentinel generate <doc>` | Generate BDD & Playwright tests from Markdown doc | `npx karsa-sentinel generate ./docs/login.md` |
-| `karsa-sentinel generate <doc> -d` | Generate with real-time debug log tracing | `npx karsa-sentinel generate ./docs/login.md -d` |
-| `karsa-sentinel run` | Execute test suite with autonomous locator self-healing | `npx karsa-sentinel run` |
+| `karsa-sentinel init` | Initialize workspace with Enterprise BDD config, BasePage & fixtures | `npx karsa-sentinel init` |
+| `karsa-sentinel generate <doc>` | Generate Enterprise BDD suite (features, pages, steps, fixtures) | `npx karsa-sentinel generate ./docs/login.md` |
+| `karsa-sentinel generate <doc> --mode=standalone` | Generate single flat `.spec.ts` without full folder structure | `npx karsa-sentinel generate ./docs/login.md --mode=standalone` |
+| `karsa-sentinel generate <doc> -d` | Generate with real-time DOM & AI debug tracing | `npx karsa-sentinel generate ./docs/login.md -d` |
+| `karsa-sentinel run` | Execute test suite (auto-compiles BDD with `bddgen`) | `npx karsa-sentinel run` |
 
 ### CLI Options for `generate`:
+- `-m, --mode <mode>`: Generation mode: `enterprise` (default) \| `standalone`.
 - `-d, --debug`: Enable real-time debug logging (HTTP calls, token counts, DOM discovery).
 - `-o, --output <dir>`: Output directory *(default: `generated`)*.
 - `-p, --provider <name>`: Override AI provider (`9router` \| `openai` \| `gemini` \| `mock`).
-- `-m, --model <name>`: Override AI model name (e.g. `mimo`, `gpt-4o`).
+- `--model <name>`: Override AI model name (e.g. `mimo`, `gpt-4o`).
 - `--skip-crawl`: Skip live browser DOM exploration.
 
 ---
 
-## 🔌 Programmatic Usage
+## 🔌 Programmatic TypeScript API
 
 ```typescript
 import { SentinelOrchestrator, NineRouterProvider } from "karsa-sentinel";
@@ -83,16 +117,19 @@ const provider = new NineRouterProvider({
 const orchestrator = new SentinelOrchestrator(provider);
 const result = await orchestrator.generate({
   documentPath: "./docs/login.md",
+  mode: "enterprise",
 });
 
-console.log("Spec created at:", result.specFile);
-console.log("Page Object created at:", result.pageObjectFile);
+console.log("Feature:    ", result.featureFile);
+console.log("Steps:      ", result.stepFile);
+console.log("Page Object:", result.pageObjectFile);
+console.log("Fixture:    ", result.fixtureFile);
 ```
 
 ---
 
-## 📚 Full Documentation & Architecture
-For deep architectural blueprints, Graphify knowledge graphs, and contributor guides, visit the [GitHub Repository](https://github.com/skeithnight/karsa-sentinel).
+## 📚 Documentation & Repository
+For architectural blueprints, autonomous self-healing details, and contributor guides, visit the [GitHub Repository](https://github.com/skeithnight/karsa-sentinel).
 
 ## 📄 License
 [MIT](https://github.com/skeithnight/karsa-sentinel/blob/main/LICENSE) © [skeithnight](https://github.com/skeithnight)

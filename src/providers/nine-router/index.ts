@@ -5,6 +5,8 @@ import {
   type Requirement,
   type TestCase,
   type BDDFeature,
+  type TestDesignContext,
+  type UIElement,
   RequirementSchema,
   TestCaseSchema,
   BDDFeatureSchema,
@@ -216,9 +218,13 @@ Return ONLY valid JSON matching this schema:
     }
   }
 
-  async generateTestCases(requirement: Requirement): Promise<TestCase[]> {
-    logger.debug("AI:TEST_CASES", `Generating test cases for requirement: ${requirement.title}`);
+  async generateTestCases(context: TestDesignContext): Promise<TestCase[]> {
+    const { requirement, uiEvidence } = context;
+    logger.debug("AI:TEST_CASES", `Generating test cases for requirement: ${requirement.title} (with ${uiEvidence.length} UI elements)`);
     try {
+      // Build UI evidence summary for the AI prompt
+      const uiSummary = this.formatUIEvidence(uiEvidence);
+
       const systemPrompt = `You are a strict JSON generator. Do NOT output conversational prose, greetings, or markdown explanations.
 Return ONLY a valid JSON array of test cases matching this schema:
 [
@@ -238,21 +244,25 @@ Return ONLY a valid JSON array of test cases matching this schema:
     "priority": "high",
     "tags": ["smoke", "auth"]
   }
-]`;
+]
 
-      const raw = await this.callChatCompletion(systemPrompt, `Requirement:\n${JSON.stringify(requirement, null, 2)}\n\nCRITICAL: Output ONLY the JSON array.`);
+IMPORTANT: Reference the actual UI elements discovered on the page when writing test step actions. Use the element names and roles provided in the UI Evidence section.`;
+
+      const userPrompt = `Requirement:\n${JSON.stringify(requirement, null, 2)}\n\n${uiSummary}\nCRITICAL: Output ONLY the JSON array.`;
+
+      const raw = await this.callChatCompletion(systemPrompt, userPrompt);
       const parsed = this.extractJson<TestCase[] | { testCases: TestCase[] }>(raw);
       const testCases = Array.isArray(parsed) ? parsed : (parsed.testCases || []);
       
       if (!testCases.length) {
-        return this.fallback.generateTestCases(requirement);
+        return this.fallback.generateTestCases(context);
       }
 
       logger.debug("AI:TEST_CASES", `Parsed ${testCases.length} test cases from AI response`);
       return testCases.map((tc) => TestCaseSchema.parse(tc));
     } catch (err) {
       logger.warn(`9Router test case note: ${err instanceof Error ? err.message : String(err)}`);
-      return this.fallback.generateTestCases(requirement);
+      return this.fallback.generateTestCases(context);
     }
   }
 
@@ -307,5 +317,21 @@ Respond ONLY with the fixed selector string without quotation marks, markdown, o
       logger.warn(`9Router repair note: ${err instanceof Error ? err.message : String(err)}`);
       return this.fallback.repairLocator(failedSelector, failureContext);
     }
+  }
+
+  /**
+   * Format UI evidence into a human-readable summary for the AI prompt.
+   */
+  private formatUIEvidence(uiEvidence: UIElement[]): string {
+    if (!uiEvidence.length) return "";
+
+    const lines = ["Discovered UI Elements on the target page:"];
+    for (const el of uiEvidence.slice(0, 20)) {
+      const name = el.name || el.text || el.id;
+      const bestLocator = el.locators[0]?.selector || "(no locator)";
+      const role = el.role || el.tag;
+      lines.push(`  - ${role} "${name}" → ${bestLocator}`);
+    }
+    return lines.join("\n") + "\n";
   }
 }

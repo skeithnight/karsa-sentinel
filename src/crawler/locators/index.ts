@@ -69,7 +69,20 @@ export class LocatorGenerator {
       });
     }
 
-    // 6. Visible short text
+    // 6. Semantic class names (error, alert, title, notification)
+    if (element.className && (element.className.includes("error") || element.className.includes("title") || element.className.includes("alert") || element.className.includes("notification"))) {
+      const firstClass = element.className.trim().split(/\s+/)[0];
+      if (firstClass && !firstClass.match(/\d{5,}/)) {
+        candidates.push({
+          selector: `.${firstClass}`,
+          strategy: "css",
+          confidence: 0.86,
+          isResilient: true,
+        });
+      }
+    }
+
+    // 7. Visible short text
     if (element.text && element.text.trim().length > 0 && element.text.length < 40) {
       candidates.push({
         selector: `text="${element.text.trim()}"`,
@@ -79,7 +92,7 @@ export class LocatorGenerator {
       });
     }
 
-    // 7. ID
+    // 8. ID
     if (element.id && !element.id.startsWith("el-") && !element.id.match(/\d{5,}/)) {
       candidates.push({
         selector: `#${element.id}`,
