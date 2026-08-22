@@ -61,7 +61,7 @@ export class MarkdownRequirementParser implements IDocumentParser {
       description: descriptionLines.slice(0, 5).join(" ") || `Requirement for ${title}`,
       targetUrl: targetUrl && targetUrl.startsWith("http") ? targetUrl : undefined,
       scenarios,
-      tags: ["markdown-import", "v0.3.0"],
+      tags: ["markdown-import", "v0.4.1"],
       createdAt: new Date().toISOString(),
     };
 

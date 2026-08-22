@@ -19,7 +19,7 @@ const program = new Command();
 program
   .name("karsa-sentinel")
   .description("AI-powered QA automation agent: Transforms intent into Enterprise Playwright BDD automation")
-  .version("0.4.0")
+  .version("0.4.1")
   .option("-d, --debug", "Enable detailed debug mode with verbose log tracing")
   .hook("preAction", (thisCommand) => {
     const opts = thisCommand.opts();
