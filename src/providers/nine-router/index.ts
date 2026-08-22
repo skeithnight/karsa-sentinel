@@ -62,6 +62,7 @@ export class NineRouterProvider implements IAIProvider {
         ],
         temperature: 0.1,
         max_tokens: this.maxTokens,
+        stream: false,
       }),
     });
 

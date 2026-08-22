@@ -45,10 +45,34 @@ export class ActionResolver {
       };
     }
 
+    // ── Click / Press / Submit / Tap ───────────────────────────────────
+    if (text.includes("click") || text.includes("press") || text.includes("submit") || text.includes("tap")) {
+      const noun = this.extractTargetNoun(step.text);
+      const match = this.findBestMatch(noun, uiEvidence, ["button", "a", "input"], step.text);
+
+      const actionResolution: ResolutionResult = {
+        status: match.status,
+        confidence: match.confidence,
+        reasons: match.reasons,
+        elementId: match.element?.id,
+      };
+
+      return {
+        type: "click",
+        target: {
+          semantic: noun,
+          locator: match.element?.locators[0]?.selector,
+          strategy: match.element?.locators[0]?.strategy,
+        },
+        comment: `${step.keyword} ${step.text}`,
+        resolution: actionResolution,
+      };
+    }
+
     // ── Fill / Enter / Type ─────────────────────────────────────────────
-    if (text.includes("enter") || text.includes("type") || text.includes("fill") || text.includes("input")) {
+    if (text.includes("enter") || text.includes("type") || (text.includes("fill") && !text.includes("is filled"))) {
       const { noun, value } = this.parseActionAndValue(step.text);
-      const match = this.findBestMatch(noun, uiEvidence, ["input", "textarea"]);
+      const match = this.findBestMatch(noun, uiEvidence, ["input", "textarea"], step.text);
 
       const actionResolution: ResolutionResult = {
         status: match.status,
@@ -65,30 +89,6 @@ export class ActionResolver {
           strategy: match.element?.locators[0]?.strategy,
         },
         value: value || "",
-        comment: `${step.keyword} ${step.text}`,
-        resolution: actionResolution,
-      };
-    }
-
-    // ── Click / Press / Submit ──────────────────────────────────────────
-    if (text.includes("click") || text.includes("press") || text.includes("submit") || text.includes("tap")) {
-      const noun = this.extractTargetNoun(step.text);
-      const match = this.findBestMatch(noun, uiEvidence, ["button", "a", "input"]);
-
-      const actionResolution: ResolutionResult = {
-        status: match.status,
-        confidence: match.confidence,
-        reasons: match.reasons,
-        elementId: match.element?.id,
-      };
-
-      return {
-        type: "click",
-        target: {
-          semantic: noun,
-          locator: match.element?.locators[0]?.selector,
-          strategy: match.element?.locators[0]?.strategy,
-        },
         comment: `${step.keyword} ${step.text}`,
         resolution: actionResolution,
       };
@@ -224,7 +224,7 @@ export class ActionResolver {
    * Find the best matching UIElement for a semantic noun.
    * Returns a comprehensive MatchResult with candidates, score, and confidence.
    */
-  findBestMatch(noun: string, uiEvidence: UIElement[], preferredTags?: string[]): MatchResult {
+  findBestMatch(noun: string, uiEvidence: UIElement[], preferredTags?: string[], stepText?: string): MatchResult {
     if (!uiEvidence.length || !noun || noun === "element") {
       return {
         score: 0,
@@ -237,6 +237,9 @@ export class ActionResolver {
 
     const nounLower = noun.toLowerCase().replace(/\s+/g, "");
     const nounWords = noun.toLowerCase().split(/\s+/).filter(Boolean);
+    const quotedTokens = (stepText || "")
+      .match(/['"`]([^'"`]+)['"`]/g)
+      ?.map((t) => t.slice(1, -1).toLowerCase().replace(/[-_]/g, "")) || [];
 
     const candidates: MatchCandidate[] = [];
 
@@ -244,6 +247,24 @@ export class ActionResolver {
       let score = 0;
       const reasons: string[] = [];
       let hasDirectMatch = false;
+
+      // Quoted token exact match (from step definition)
+      if (el.name) {
+        const nameLower = el.name.toLowerCase().replace(/[-_]/g, "");
+        if (quotedTokens.includes(nameLower)) {
+          score += 15;
+          reasons.push(`Quoted token match on name: "${el.name}"`);
+          hasDirectMatch = true;
+        }
+      }
+      for (const [key, val] of Object.entries(el.attributes)) {
+        const valLower = val.toLowerCase().replace(/[-_]/g, "");
+        if (quotedTokens.includes(valLower)) {
+          score += 15;
+          reasons.push(`Quoted token match on [${key}="${val}"]`);
+          hasDirectMatch = true;
+        }
+      }
 
       // Match against name
       if (el.name) {

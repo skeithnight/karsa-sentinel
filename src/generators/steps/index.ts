@@ -59,13 +59,18 @@ ${stepBlocks.join("\n\n")}
     // 0. If ActionResolver determined this step is explicitly unresolved
     if (action?.type === "unresolved") {
       const pattern = this.parameterizePattern(text);
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+      const paramsSignature = paramList ? `, ${paramList}` : "";
       const reason = action.resolution?.reasons?.join("; ") || "Could not resolve step against DOM evidence";
+      const safeText = step.text.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      const safeReason = reason.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       return {
         pattern: `${keyword}:${pattern}`,
-        code: `${keyword}('${pattern}', async ({ page }) => {
+        code: `${keyword}('${pattern}', async ({ page }${paramsSignature}) => {
   // ❌ UNRESOLVED STEP: ${step.text}
-  // Reason: ${reason}
-  test.fail(true, 'Step could not be resolved against live DOM evidence: ${step.text}');
+  // Reason: ${safeReason}
+  expect(false, 'Step could not be resolved against live DOM evidence: ${safeText}').toBe(true);
 });`,
       };
     }
@@ -73,11 +78,14 @@ ${stepBlocks.join("\n\n")}
     // 1. Navigation: Given user navigates to {string}
     if (keyword === "Given" && (lower.includes("navigates to") || lower.includes("on the") || lower.includes("opens") || lower.includes("visits") || lower.includes("is on"))) {
       const pattern = this.parameterizePattern(text);
-      if (pattern.includes("{string}")) {
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+      const paramsSignature = paramList ? `, ${paramList}` : "";
+      if (paramCount > 0) {
         return {
           pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ ${fixtureName} }, url: string) => {
-  await ${fixtureName}.goto(url);
+          code: `${keyword}('${pattern}', async ({ ${fixtureName} }${paramsSignature}) => {
+  await ${fixtureName}.goto(arg1 || '${targetUrl || "/"}');
 });`,
         };
       }
@@ -90,61 +98,77 @@ ${stepBlocks.join("\n\n")}
     }
 
     // 2. Multi-param Login: When user enters username {string} and password {string}
-    if (lower.includes("login") || (lower.includes("username") && lower.includes("password"))) {
-      const quoteCount = (text.match(/['"`][^'"`]+['"`]/g) || []).length;
-      if (quoteCount >= 2) {
-        const pattern = this.parameterizePattern(text);
+    if ((lower.includes("username") && lower.includes("password")) || (lower.includes("credentials") && (lower.includes("enter") || lower.includes("fill")))) {
+      const pattern = this.parameterizePattern(text);
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      if (paramCount >= 2) {
+        const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+        const paramsSignature = `, ${paramList}`;
+        const argsArray = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}`).join(", ");
         return {
           pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ ${fixtureName} }, username: string, password: string) => {
+          code: `${keyword}('${pattern}', async ({ ${fixtureName} }${paramsSignature}) => {
   const pageObj = ${fixtureName} as any;
   if (typeof pageObj.login === 'function') {
-    await pageObj.login(username, password);
+    const allArgs = [${argsArray}];
+    const user = allArgs.find(a => a && (a.includes('user') || a.includes('standard') || a.includes('locked') || a.includes('problem') || a.includes('performance') || a.includes('error') || a.includes('visual'))) || arg1;
+    const pass = allArgs.find(a => a && (a.includes('sauce') || a.includes('secret') || a.includes('pass'))) || arg2;
+    await pageObj.login(user, pass);
   }
 });`,
         };
       }
     }
 
-    // 3. Fill specific inputs
-    if (lower.includes("enter") || lower.includes("type") || lower.includes("fill") || lower.includes("input")) {
+    // 3. Click button: user clicks the Login button
+    if (action?.type === "click" || lower.includes("click") || lower.includes("press") || lower.includes("submit") || lower.includes("tap")) {
       const pattern = this.parameterizePattern(text);
-      if (pattern.includes("{string}")) {
-        let fieldStatements: string[] = [];
-        if (action?.target?.locator) {
-          if (lower.includes("empty") || lower.includes("blank") || lower.includes("clear")) {
-            fieldStatements.push(`await page.locator('${action.target.locator}').clear();`);
-          } else {
-            fieldStatements.push(`await page.locator('${action.target.locator}').fill(value);`);
-          }
-        } else {
-          fieldStatements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
-          fieldStatements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
-        }
-
-        return {
-          pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ page }, value: string) => {
-  ${fieldStatements.join("\n  ")}
-});`,
-        };
-      }
-    }
-
-    // 4. Click button: user clicks the Login button
-    if (lower.includes("click") || lower.includes("press") || lower.includes("submit") || lower.includes("tap")) {
-      const pattern = this.parameterizePattern(text);
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+      const paramsSignature = paramList ? `, ${paramList}` : "";
       let statements = [];
       if (action?.target?.locator) {
         statements.push(`await page.locator('${action.target.locator}').click();`);
       } else {
+        const safeText = text.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
         statements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
-        statements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
+        statements.push(`expect(false, 'Strict Resolution Policy: UI evidence missing for "${safeText}"').toBe(true);`);
       }
       return {
         pattern: `${keyword}:${pattern}`,
-        code: `${keyword}('${pattern}', async ({ page }) => {
+        code: `${keyword}('${pattern}', async ({ page }${paramsSignature}) => {
   ${statements.join("\n  ")}
+});`,
+      };
+    }
+
+    // 4. Fill specific inputs
+    if (action?.type === "fill" || lower.includes("enter") || lower.includes("type") || (lower.includes("fill") && !lower.includes("is filled")) || lower.startsWith("input")) {
+      const pattern = this.parameterizePattern(text);
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+      const paramsSignature = paramList ? `, ${paramList}` : "";
+      let fieldStatements: string[] = [];
+      if (action?.target?.locator) {
+        if (lower.includes("empty") || lower.includes("blank") || lower.includes("clear")) {
+          fieldStatements.push(`await page.locator('${action.target.locator}').clear();`);
+        } else if (paramCount > 0) {
+          fieldStatements.push(`await page.locator('${action.target.locator}').fill(arg1 || '');`);
+        } else if (action.value) {
+          fieldStatements.push(`await page.locator('${action.target.locator}').fill('${action.value}');`);
+        } else {
+          fieldStatements.push(`await expect(page.locator('${action.target.locator}')).toBeVisible();`);
+        }
+      } else {
+        const safeText = text.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        fieldStatements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
+        fieldStatements.push(`expect(false, 'Strict Resolution Policy: UI evidence missing for "${safeText}"').toBe(true);`);
+      }
+
+      return {
+        pattern: `${keyword}:${pattern}`,
+        code: `${keyword}('${pattern}', async ({ page }${paramsSignature}) => {
+  ${fieldStatements.join("\n  ")}
 });`,
       };
     }
@@ -152,19 +176,22 @@ ${stepBlocks.join("\n\n")}
     // 5. Assert URL: user is redirected to {string}
     if (lower.includes("redirect") || lower.includes("url") || lower.includes("navigated to")) {
       const pattern = this.parameterizePattern(text);
-      if (pattern.includes("{string}")) {
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+      const paramsSignature = paramList ? `, ${paramList}` : "";
+      if (paramCount > 0) {
         return {
           pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ page }, expectedPath: string) => {
-  await expect(page).toHaveURL(new RegExp(expectedPath.replace(/\\//g, '\\\\/')));
+          code: `${keyword}('${pattern}', async ({ page }${paramsSignature}) => {
+  await expect(page).toHaveURL(new RegExp((arg1 || '').replace(/\\//g, '\\\\/')));
 });`,
         };
       }
       const urlMatch = text.match(/([/a-zA-Z0-9._-]+\.html?)/);
       const expectedPath = urlMatch ? urlMatch[1] : ".*";
       return {
-        pattern: `${keyword}:${this.escapeCucumberSpecialChars(text)}`,
-        code: `${keyword}('${this.escapeCucumberSpecialChars(text)}', async ({ page }) => {
+        pattern: `${keyword}:${pattern}`,
+        code: `${keyword}('${pattern}', async ({ page }) => {
   await expect(page).toHaveURL(/${expectedPath.replace(/\//g, "\\/")}/);
 });`,
       };
@@ -173,46 +200,67 @@ ${stepBlocks.join("\n\n")}
     // 6. Assert Header / Title Text
     if (lower.includes("header") || lower.includes("title")) {
       const pattern = this.parameterizePattern(text);
-      if (pattern.includes("{string}")) {
-        let statements = [];
-        if (action?.target?.locator) {
-          statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(expectedMessage);`);
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+      const paramsSignature = paramList ? `, ${paramList}` : "";
+      let statements = [];
+      if (action?.target?.locator) {
+        if (paramCount > 0) {
+          statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(arg1 || '');`);
         } else {
-          statements.push(`await expect(page.getByText(expectedMessage).first()).toBeVisible();`);
+          statements.push(`await expect(page.locator('${action.target.locator}').first()).toBeVisible();`);
         }
-        return {
-          pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ page }, expectedMessage: string) => {
+      } else {
+        if (paramCount > 0) {
+          statements.push(`await expect(page.getByText(arg1 || '').first()).toBeVisible();`);
+        } else {
+          statements.push(`await page.waitForLoadState('domcontentloaded');`);
+        }
+      }
+      return {
+        pattern: `${keyword}:${pattern}`,
+        code: `${keyword}('${pattern}', async ({ page }${paramsSignature}) => {
   ${statements.join("\n  ")}
 });`,
-        };
-      }
+      };
     }
 
     // 7. Assert Error Text
     if (lower.includes("error") || lower.includes("display") || lower.includes("show")) {
       const pattern = this.parameterizePattern(text);
-      if (pattern.includes("{string}")) {
-        let statements = [];
-        if (action?.target?.locator) {
-          statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(expectedMessage);`);
+      const paramCount = (pattern.match(/\{string\}/g) || []).length;
+      const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+      const paramsSignature = paramList ? `, ${paramList}` : "";
+      let statements = [];
+      if (action?.target?.locator) {
+        if (paramCount > 0) {
+          statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(arg1 || '');`);
         } else {
-          statements.push(`await expect(page.getByText(expectedMessage).first()).toBeVisible();`);
+          statements.push(`await expect(page.locator('${action.target.locator}').first()).toBeVisible();`);
         }
-        return {
-          pattern: `${keyword}:${pattern}`,
-          code: `${keyword}('${pattern}', async ({ page }, expectedMessage: string) => {
+      } else {
+        if (paramCount > 0) {
+          statements.push(`await expect(page.getByText(arg1 || '').first()).toBeVisible();`);
+        } else {
+          statements.push(`await page.waitForLoadState('domcontentloaded');`);
+        }
+      }
+      return {
+        pattern: `${keyword}:${pattern}`,
+        code: `${keyword}('${pattern}', async ({ page }${paramsSignature}) => {
   ${statements.join("\n  ")}
 });`,
-        };
-      }
+      };
     }
 
     // 8. General Fallback
     const pattern = this.parameterizePattern(text);
+    const paramCount = (pattern.match(/\{string\}/g) || []).length;
+    const paramList = Array.from({ length: paramCount }, (_, i) => `arg${i + 1}: string`).join(", ");
+    const paramsSignature = paramList ? `, ${paramList}` : "";
     return {
       pattern: `${keyword}:${pattern}`,
-      code: `${keyword}('${pattern}', async ({ ${fixtureName}, page }) => {
+      code: `${keyword}('${pattern}', async ({ ${fixtureName}, page }${paramsSignature}) => {
   await page.waitForLoadState('domcontentloaded');
 });`,
     };
@@ -231,9 +279,18 @@ ${stepBlocks.join("\n\n")}
   }
 
   private escapeCucumberSpecialChars(text: string): string {
-    // In Cucumber Expressions, / outside of {string} needs escaping
+    // In Cucumber Expressions, /, (, ), {, } outside of {string} need escaping in JS/TS source
     const parts = text.split('{string}');
-    const escapedParts = parts.map((part) => part.replace(/\//g, "\\/"));
+    const escapedParts = parts.map((part) =>
+      part
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\//g, "\\\\/")
+        .replace(/\(/g, "\\\\(")
+        .replace(/\)/g, "\\\\)")
+        .replace(/\{/g, "\\\\{")
+        .replace(/\}/g, "\\\\}")
+    );
     return escapedParts.join('{string}');
   }
 }
