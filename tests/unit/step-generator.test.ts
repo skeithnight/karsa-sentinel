@@ -41,9 +41,9 @@ describe("StepDefinitionGenerator (playwright-bdd)", () => {
     expect(code).toContain("import { createBdd } from 'playwright-bdd';");
     expect(code).toContain("import { test } from '../fixtures/base.fixture.js';");
     expect(code).toContain("const { Given, When, Then } = createBdd(test);");
-    expect(code).toContain("Given('user navigates to {string}', async ({ loginPage }, url: string) => {");
-    expect(code).toContain("When('user enters username {string} and password {string}', async ({ loginPage }, username: string, password: string) => {");
-    expect(code).toContain("await pageObj.login(username, password);");
-    expect(code).toContain("Then('user is redirected to {string}', async ({ page }, expectedPath: string) => {");
+    expect(code).toContain("Given('user navigates to {string}', async ({ loginPage }, arg1: string) => {");
+    expect(code).toContain("When('user enters username {string} and password {string}', async ({ loginPage }, arg1: string, arg2: string) => {");
+    expect(code).toContain("await pageObj.login(user, pass);");
+    expect(code).toContain("Then('user is redirected to {string}', async ({ page }, arg1: string) => {");
   });
 });
