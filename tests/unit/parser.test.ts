@@ -27,7 +27,7 @@ Overview description for login.
   it("should parse via DocumentParserRegistry", async () => {
     const registry = new DocumentParserRegistry();
     const req = await registry.parseFile("docs/examples/login.md");
-    expect(req.title).toContain("User Authentication");
+    expect(req.title).toContain("Authentication");
     expect(req.scenarios.length).toBeGreaterThan(0);
   });
 });

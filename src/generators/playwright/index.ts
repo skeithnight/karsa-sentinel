@@ -160,6 +160,8 @@ ${testCases}
           const expected = action.expected || "";
           if (locator) {
             lines.push(`    await expect(page.locator('${locator}').first()).toContainText('${expected.replace(/'/g, "\\'")}');`);
+          } else if (expected) {
+            lines.push(`    await expect(page.getByText('${expected.replace(/'/g, "\\'")}').first()).toBeVisible();`);
           } else {
             const semantic = action.target?.semantic || "text";
             lines.push(`    // ❌ Strict Resolution Policy: UI evidence missing for "${semantic}"`);

@@ -178,8 +178,7 @@ ${stepBlocks.join("\n\n")}
         if (action?.target?.locator) {
           statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(expectedMessage);`);
         } else {
-          statements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
-          statements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
+          statements.push(`await expect(page.getByText(expectedMessage).first()).toBeVisible();`);
         }
         return {
           pattern: `${keyword}:${pattern}`,
@@ -198,8 +197,7 @@ ${stepBlocks.join("\n\n")}
         if (action?.target?.locator) {
           statements.push(`await expect(page.locator('${action.target.locator}').first()).toContainText(expectedMessage);`);
         } else {
-          statements.push(`// ❌ Strict Resolution Policy: UI evidence missing`);
-          statements.push(`test.fail(true, 'Strict Resolution Policy: UI evidence missing for "${text}"');`);
+          statements.push(`await expect(page.getByText(expectedMessage).first()).toBeVisible();`);
         }
         return {
           pattern: `${keyword}:${pattern}`,

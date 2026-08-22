@@ -21,7 +21,7 @@ export abstract class BasePage {
         return (await this.errorMessage.first().innerText()).trim();
       }
     } catch {
-      // ignore
+      // ignore if not visible
     }
     return '';
   }

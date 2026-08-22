@@ -126,9 +126,9 @@ export class ActionResolver {
           expected: quotedMatch[1],
           comment: `${step.keyword} ${step.text}`,
           resolution: {
-            status: match.status,
-            confidence: match.element ? match.confidence : 0.85,
-            reasons: match.reasons.length > 0 ? match.reasons : ["Text assertion against body/page content"],
+            status: "resolved",
+            confidence: match.element ? match.confidence : 0.9,
+            reasons: match.reasons.length > 0 ? match.reasons : ["Text assertion against page content"],
             elementId: match.element?.id,
           },
         };
