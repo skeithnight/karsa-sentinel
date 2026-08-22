@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// ── Requirement ─────────────────────────────────────────────────────────
 export const RequirementSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -12,6 +13,16 @@ export const RequirementSchema = z.object({
 
 export type Requirement = z.infer<typeof RequirementSchema>;
 
+// ── Normalized Document ─────────────────────────────────────────────────
+export interface NormalizedDocument {
+  rawContent: string;
+  title?: string;
+  targetUrl?: string;
+  sections: string[];
+  sourcePath: string;
+}
+
+// ── Test Case ───────────────────────────────────────────────────────────
 export const TestCaseSchema = z.object({
   id: z.string(),
   requirementId: z.string(),
@@ -23,6 +34,7 @@ export const TestCaseSchema = z.object({
       stepNumber: z.number().int().positive(),
       action: z.string(),
       expectedResult: z.string(),
+      data: z.record(z.string()).optional(),
     })
   ),
   priority: z.enum(["low", "medium", "high", "critical"]).default("medium"),
@@ -31,6 +43,7 @@ export const TestCaseSchema = z.object({
 
 export type TestCase = z.infer<typeof TestCaseSchema>;
 
+// ── Locator Candidate ───────────────────────────────────────────────────
 export const LocatorCandidateSchema = z.object({
   selector: z.string(),
   strategy: z.enum(["role", "text", "test-id", "label", "placeholder", "css", "xpath"]),
@@ -40,6 +53,7 @@ export const LocatorCandidateSchema = z.object({
 
 export type LocatorCandidate = z.infer<typeof LocatorCandidateSchema>;
 
+// ── UI Element ──────────────────────────────────────────────────────────
 export const UIElementSchema = z.object({
   id: z.string(),
   role: z.string().optional(),
@@ -53,6 +67,35 @@ export const UIElementSchema = z.object({
 
 export type UIElement = z.infer<typeof UIElementSchema>;
 
+// ── Resolution Result ───────────────────────────────────────────────────
+export const ResolutionResultSchema = z.object({
+  status: z.enum(["resolved", "ambiguous", "unresolved"]),
+  confidence: z.number().min(0).max(1),
+  reasons: z.array(z.string()).default([]),
+  elementId: z.string().optional(),
+});
+
+export type ResolutionResult = z.infer<typeof ResolutionResultSchema>;
+
+// ── Automation Action (Intermediate Representation) ─────────────────────
+export const AutomationActionSchema = z.object({
+  type: z.enum(["navigate", "fill", "click", "select", "assert_visible", "assert_text", "assert_url", "wait", "custom", "unresolved"]),
+  target: z
+    .object({
+      semantic: z.string(),
+      locator: z.string().optional(),
+      strategy: z.string().optional(),
+    })
+    .optional(),
+  value: z.string().optional(),
+  expected: z.string().optional(),
+  comment: z.string().optional(),
+  resolution: ResolutionResultSchema.optional(),
+});
+
+export type AutomationAction = z.infer<typeof AutomationActionSchema>;
+
+// ── BDD ─────────────────────────────────────────────────────────────────
 export const BDDStepSchema = z.object({
   keyword: z.enum(["Given", "When", "Then", "And", "But"]),
   text: z.string(),
@@ -73,8 +116,16 @@ export const BDDFeatureSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().optional(),
+  targetUrl: z.string().optional(),
   tags: z.array(z.string()).default([]),
   scenarios: z.array(BDDScenarioSchema),
 });
 
 export type BDDFeature = z.infer<typeof BDDFeatureSchema>;
+
+// ── Test Design Context ─────────────────────────────────────────────────
+export interface TestDesignContext {
+  requirement: Requirement;
+  uiEvidence: UIElement[];
+  existingTests?: TestCase[];
+}

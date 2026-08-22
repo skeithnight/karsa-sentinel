@@ -1,6 +1,6 @@
 {
   "name": "karsa-sentinel",
-  "version": "0.2.4",
+  "version": "0.4.1",
   "description": "Autonomous AI QA automation agent that transforms product intent into validated Playwright BDD test suites",
   "type": "module",
   "main": "./dist/index.js",
@@ -33,11 +33,18 @@
     "prepublishOnly": "npm run build && npm test && node scripts/prepare-npm-readme.js",
     "postpublish": "node scripts/restore-readme.js",
     "start": "tsx src/cli/index.ts",
-    "test": "vitest run",
+    "test": "bddgen && playwright test",
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit",
     "test:generate": "tsx src/cli/index.ts generate",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bdd:gen": "bddgen",
+    "generate": "karsa-sentinel generate ./docs/examples/login.md",
+    "generate:standalone": "karsa-sentinel generate ./docs/examples/login.md --mode=standalone",
+    "test:sentinel": "karsa-sentinel run",
+    "test:ui": "bddgen && playwright test --ui",
+    "test:headed": "bddgen && playwright test --headed",
+    "report": "playwright show-report"
   },
   "keywords": [
     "ai",
@@ -59,12 +66,15 @@
     "commander": "^13.1.0",
     "dotenv": "^16.4.7",
     "playwright": "^1.50.1",
+    "playwright-bdd": "^9.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "@playwright/test": "^1.50.1",
+    "playwright-bdd": "^9.2.0"
   }
 }

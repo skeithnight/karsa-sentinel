@@ -1,4 +1,4 @@
-import type { Requirement, TestCase, BDDFeature, UIElement } from "../models/index.js";
+import type { Requirement, TestCase, BDDFeature, UIElement, TestDesignContext } from "../models/index.js";
 
 export interface IDocumentParser {
   supports(filePath: string): boolean;
@@ -8,7 +8,7 @@ export interface IDocumentParser {
 export interface IAIProvider {
   name: string;
   generateRequirements(content: string): Promise<Requirement>;
-  generateTestCases(requirement: Requirement): Promise<TestCase[]>;
+  generateTestCases(context: TestDesignContext): Promise<TestCase[]>;
   generateBDD(testCases: TestCase[]): Promise<BDDFeature>;
   repairLocator(failedSelector: string, pageSnapshot: string): Promise<string>;
 }

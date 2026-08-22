@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { defineBddConfig, cucumberReporter } from 'playwright-bdd';
 
 // Zero-dependency environment variable loader
 try {
@@ -26,23 +27,40 @@ try {
   // ignore
 }
 
+const testDir = defineBddConfig({
+  features: 'features/**/*.feature',
+  steps: ['src/steps/**/*.ts', 'src/fixtures/base.fixture.ts'],
+});
+
 export default defineConfig({
-  testDir: './generated',
+  testDir,
+  fullyParallel: true,
   timeout: 30000,
   reporter: [
-    ['html', { open: 'never' }],
-    ['list']
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['list'],
+    cucumberReporter('html', { outputFile: 'cucumber-report/report.html' }),
   ],
   use: {
     baseURL: process.env.BASE_URL || 'https://www.saucedemo.com',
+    testIdAttribute: 'data-test',
     headless: process.env.PLAYWRIGHT_HEADLESS !== 'false',
     screenshot: 'only-on-failure',
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
   },
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
   ],
 });

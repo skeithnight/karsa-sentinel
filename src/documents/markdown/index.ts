@@ -13,28 +13,55 @@ export class MarkdownRequirementParser implements IDocumentParser {
     const scenarios: string[] = [];
     const descriptionLines: string[] = [];
 
+    // Extract URL from anywhere in the document if not found yet
+    const urlRegex = /(https?:\/\/[^\s`'"\)]+)/i;
+    const globalUrlMatch = content.match(urlRegex);
+    if (globalUrlMatch) {
+      targetUrl = globalUrlMatch[1];
+    }
+
+    let currentScenarioLines: string[] = [];
+
+    const flushScenario = () => {
+      if (currentScenarioLines.length > 0) {
+        scenarios.push(currentScenarioLines.join("\n"));
+        currentScenarioLines = [];
+      }
+    };
+
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.startsWith("# ") && title === "Untitled Requirement") {
+      if (!trimmed) continue;
+
+      // Extract Title from top-level heading
+      if ((trimmed.startsWith("# ") || trimmed.startsWith("Feature:")) && title === "Untitled Requirement") {
         title = trimmed.replace(/^#\s+/, "").replace(/^Feature:\s*/i, "").trim();
-      } else if (trimmed.startsWith("`http://") || trimmed.startsWith("`https://")) {
-        targetUrl = trimmed.replace(/`/g, "").trim();
-      } else if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-        targetUrl = trimmed;
-      } else if (trimmed.match(/^#{2,4}\s+Scenario\s*\d*:/i)) {
-        scenarios.push(trimmed.replace(/^#+\s+/, "").trim());
-      } else if (trimmed.length > 0 && !trimmed.startsWith("#")) {
+      }
+      // Extract Scenarios from sub-headings or scenario bullet lists
+      else if (trimmed.match(/^#{2,4}\s+(Scenario\s*\d*:?|Scenario\b|Verify\b|Test\s*\d*:?|User should|Should\b)/i)) {
+        flushScenario();
+        currentScenarioLines.push(trimmed.replace(/^#+\s+/, "").trim());
+      } else if (trimmed.match(/^-\s+(Scenario\s*\d*:?|Scenario\b)/i)) {
+        flushScenario();
+        currentScenarioLines.push(trimmed.replace(/^-\s+/, "").trim());
+      } else if (currentScenarioLines.length > 0 && trimmed.match(/^[-*]\s+(\*\*)?(Given|When|Then|And|But)\b/i)) {
+        // Step under the current scenario
+        currentScenarioLines.push(trimmed);
+      }
+      // Description text
+      else if (!trimmed.startsWith("#") && !trimmed.startsWith("http") && currentScenarioLines.length === 0) {
         descriptionLines.push(trimmed);
       }
     }
+    flushScenario();
 
     const requirementData = {
       id: `req-${Date.now()}`,
       title,
-      description: descriptionLines.slice(0, 5).join(" "),
+      description: descriptionLines.slice(0, 5).join(" ") || `Requirement for ${title}`,
       targetUrl: targetUrl && targetUrl.startsWith("http") ? targetUrl : undefined,
       scenarios,
-      tags: ["markdown-import", "phase-1"],
+      tags: ["markdown-import", "v0.4.1"],
       createdAt: new Date().toISOString(),
     };
 

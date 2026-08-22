@@ -4,7 +4,8 @@
 
 # 🛡️ Karsa Sentinel
 
-### **Autonomous AI QA Automation Agent & Intent-to-Execution Engine**
+### Autonomous AI QA Automation Agent
+### **From Product Intent → Verified Automation**
 
 *AI Proposes. Sentinel Verifies.*
 
@@ -12,258 +13,423 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.7-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![Playwright](https://img.shields.io/badge/playwright-1.50-green?style=flat-square)](https://playwright.dev/)
+[![Playwright](https://img.shields.io/badge/playwright-1.50%2B-green?style=flat-square)](https://playwright.dev/)
+[![playwright-bdd](https://img.shields.io/badge/playwright--bdd-9.2-purple?style=flat-square)](https://vitalets.github.io/playwright-bdd/)
+
+[GitHub](https://github.com/skeithnight/karsa-sentinel) · [npm](https://www.npmjs.com/package/karsa-sentinel)
 
 </div>
 
 ---
 
-## 📑 Table of Contents
-- [📖 Product Vision & Philosophy](#-product-vision--philosophy)
-- [🏛️ System Architecture](#️-system-architecture)
-- [🔄 Autonomous Pipeline Flow](#-autonomous-pipeline-flow)
-- [🚀 Key Capabilities](#-key-capabilities)
-- [📁 Project Structure](#-project-structure)
-- [⚡ Quick Start Guide](#-quick-start-guide)
-- [🤖 Supported AI Providers](#-supported-ai-providers)
-- [⚙️ Configuration (`.env`)](#️-configuration-env)
-- [💻 CLI Reference](#-cli-reference)
-- [🩹 Autonomous Self-Healing](#-autonomous-self-healing)
-- [🐞 Real-Time Debug Tracing (`-d`)](#-real-time-debug-tracing--d)
-- [🔌 Programmatic TypeScript API](#-programmatic-typescript-api)
-- [📊 Knowledge Graph (Graphify)](#-knowledge-graph-graphify)
-- [🛠️ Local Development & Testing](#️-local-development--testing)
-- [📄 License](#-license)
+## 📖 What is Karsa Sentinel?
 
----
+Writing and maintaining end-to-end test automation is still largely manual.
 
-## 📖 Product Vision & Philosophy
+You receive a PRD, BRD, Jira ticket, or Markdown specification. Then someone has to:
 
-Modern software testing is bottlenecked by the manual effort required to write, scaffold, and maintain end-to-end automation scripts as user interfaces evolve.
+1. Understand the requirement
+2. Inspect the application
+3. Identify UI elements
+4. Design test scenarios
+5. Write automation code
+6. Maintain broken selectors as the UI changes
 
-**Karsa Sentinel** bridges product intent and executable test verification. It takes natural language requirements (Markdown, Jira specs, PRDs) and pairs LLM intelligence with real browser DOM inspection to output deterministic, resilient **Playwright TypeScript test suites**, **BDD Gherkin features**, and **typed Page Objects** with **autonomous self-repair capabilities**.
+**Karsa Sentinel explores a different approach.**
 
-> ### 💡 Core Tenet: *AI Proposes. Sentinel Verifies.*
-> LLMs generate hypotheses (test scenarios and selectors). Sentinel independently verifies them against the live DOM and Playwright test assertions before committing code.
-
----
-
-## 🏛️ System Architecture
+Give Sentinel a requirement document and a target URL:
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 KARSA SENTINEL CORE                                    │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-               ┌────────────────────────────┼────────────────────────────┐
-               ▼                            ▼                            ▼
-  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
-  │   1. INTENT INGESTION   │  │   2. DOM EXPLORATION    │  │     3. AI SYNTHESIS     │
-  │ • Markdown Parser       │  │ • Playwright Crawler    │  │ • 9Router AI Proxy      │
-  │ • Jira / PRD Extractors │  │ • Accessibility Tree    │  │ • OpenAI / Gemini       │
-  │ • Target URL Resolver   │  │ • Resilient Locators    │  │ • Zod Schema Validation │
-  └────────────┬────────────┘  └────────────┬────────────┘  └────────────┬────────────┘
-               │                            │                            │
-               └────────────────────────────┼────────────────────────────┘
-                                            │
-                                            ▼
-                               ┌─────────────────────────┐
-                               │ 4. ARTIFACT GENERATION  │
-                               │ • Typed Page Objects    │
-                               │ • Granular 1:1 Specs    │
-                               │ • BDD Gherkin Features  │
-                               └────────────┬────────────┘
-                                            │
-                                            ▼
-                               ┌─────────────────────────┐
-                               │  5. EXECUTION & REPAIR  │
-                               │ • Playwright Test Runner│
-                               │ • Failure Analyzer      │
-                               │ • Live Auto-Patcher     │
-                               └────────────┬────────────┘
-                                            │
-                                            ▼
-                               ┌─────────────────────────┐
-                               │  6. REPORTS & TRACING   │
-                               │ • Interactive HTML      │
-                               │ • Real-time Debug Logs  │
-                               │ • Executive Summaries   │
-                               └─────────────────────────┘
+📄 Requirement + 🌐 Target URL
+        ↓
+🤖 Understand Product Intent
+        ↓
+🔎 Explore Live Application
+        ↓
+🧠 Collect Real UI Evidence
+        ↓
+🧪 Design Test Scenarios
+        ↓
+🥒 Generate BDD Specifications
+        ↓
+🧭 Resolve Actions to Real UI Elements
+        ↓
+⚙️ Generate Playwright + TypeScript (POM, Steps, Fixtures)
+        ↓
+▶️ Execute Tests in Parallel
+        ↓
+🔍 Analyze & Verify Live Results
+```
+
+The goal is not simply:
+
+> *"Use AI to generate test code."*
+
+The goal is to build a system where:
+
+> **AI proposes automation decisions. Sentinel verifies them against real application evidence.**
+
+---
+
+## 🎯 Core Philosophy
+
+### *AI Proposes. Sentinel Verifies.*
+
+LLMs are exceptional at understanding ambiguous product requirements and proposing test scenarios.
+
+However, an LLM should not be blindly trusted to invent selectors or assume how a web application works.
+
+Karsa Sentinel strictly decouples intelligence from empirical evidence:
+
+```text
+AI Intelligence
+     │
+     ▼
+"What should we test?"
+     │
+     ▼
+Live Application Evidence
+     │
+     ▼
+"What actually exists?"
+     │
+     ▼
+Scored Resolution
+     │
+     ▼
+"Can this action be safely automated?"
+```
+
+This creates a reliable, closed-loop automation pipeline:
+
+```text
+Product Intent
+      ↓
+AI Hypothesis
+      ↓
+Browser Evidence
+      ↓
+Confidence-Based Resolution
+      ↓
+Automation Generation
+      ↓
+Execution
+      ↓
+Verification & Trust Loop
+```
+
+---
+
+## 🏛️ Architecture & Visual Overview
+
+<div align="center">
+
+<img src="assets/karsa-sentinel-visualize.png" alt="Karsa Sentinel Architecture and Workflow" width="100%" />
+
+</div>
+
+Karsa Sentinel is organized around a clear separation between **intent**, **evidence**, **decision-making**, and **automation generation**:
+
+```text
+┌─────────────────────────────────────────────────────┐
+│                   PRODUCT INTENT                    │
+│        Markdown · PRD · BRD · Jira · Specs         │
+└──────────────────────────┬──────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────┐
+│                 INTENT INGESTION                    │
+│   Parser Registry · Requirement Model · Memory      │
+│   SHA-256 Content Fingerprint (Incremental Gate)    │
+└──────────────────────────┬──────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────┐
+│                LIVE APPLICATION                     │
+│   Playwright Explorer · DOM · Accessibility Data    │
+│   Resilient Locator Candidates (ApplicationMemory)  │
+└──────────────────────────┬──────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────┐
+│                  AI TEST DESIGN                     │
+│   Test Matrix · Scenarios · Semantic Intent         │
+│   TestDesignContext (Req + UI Evidence + History)   │
+└──────────────────────────┬──────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────┐
+│                 ACTION RESOLUTION                   │
+│   Candidate Scoring · Confidence · Resolution       │
+│                                                     │
+│   RESOLVED · AMBIGUOUS · UNRESOLVED                │
+└──────────────────────────┬──────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────┐
+│                AUTOMATION ACTION IR                 │
+│        Deterministic Intermediate Representation    │
+└──────────────────────────┬──────────────────────────┘
+                           ↓
+              ┌────────────┴────────────┐
+              ↓                         ↓
+┌─────────────────────────┐  ┌─────────────────────────┐
+│   ENTERPRISE MODE       │  │   STANDALONE MODE       │
+│                         │  │                         │
+│ Gherkin Features        │  │ Playwright Specs        │
+│ Page Objects (BasePage) │  │ Flat .spec.ts Files     │
+│ Typed Fixtures          │  │                         │
+│ Step Definitions        │  │                         │
+└────────────┬────────────┘  └────────────┬────────────┘
+             └──────────────┬─────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────┐
+│                     EXECUTION                       │
+│       playwright-bdd · Playwright · Reporting       │
+└──────────────────────────┬──────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────┐
+│                  VERIFY / REPAIR                    │
+│   Failure Analysis · Candidate Repair · Validation  │
+│   validateLocatorOnPage (Live Browser DOM Check)    │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 🔄 Autonomous Pipeline Flow
 
-```mermaid
-flowchart TD
-    A[📄 Natural Language Spec / Markdown] --> B[🔍 Document Parser Registry]
-    B --> C{Target URL Provided?}
-    C -- Yes --> D[🌐 Playwright Browser Explorer]
-    D --> E[✨ Discovered DOM Elements & Resilient Locators]
-    C -- No --> F[📝 Document Heuristics]
-    E --> G[🤖 AI Test Designer Agent]
-    F --> G
-    G --> H[📋 Structured Test Matrix & Scenarios]
-    H --> I[🧱 Code Generator Engine]
-    I --> J[📦 generated/pages/*Page.ts]
-    I --> K[📜 generated/*.spec.ts]
-    I --> L[🥒 generated/*.feature]
-    K --> M[🚀 Playwright Test Execution]
-    M --> N{All Tests Passed?}
-    N -- Yes --> O[✅ Interactive HTML Report Generated]
-    N -- No --> P[🩹 Failure Analyzer & Diagnosis]
-    P --> Q[🤖 RepairAgent Generates Fixed Selector]
-    Q --> R[💾 Auto-Patch Spec File on Disk]
-    R --> M
+```text
+DOCUMENT
+   ↓
+Requirement Parser (DocumentParserRegistry)
+   ↓
+Requirement Memory / SHA-256 Fingerprint Check
+   ↓ (Unchanged? ➔ Instant Reuse in < 1s)
+Live Browser Exploration (ExplorerAgent)
+   ↓
+UI Evidence Collection (ApplicationMemory)
+   ↓
+AI Test Design (9Router / OpenAI / Gemini)
+   ↓
+BDD Scenario Generation (BDDGenerator)
+   ↓
+Action Resolver (Evidence-Driven Scoring)
+   ↓
+AutomationAction IR
+   ↓
+┌──────────────────────────────┐
+│ RESOLVED?                    │
+├──────────────┬───────────────┤
+│ YES          │ NO            │
+▼              ▼
+Generate       Explicit
+Automation     Unresolved State (test.fail)
+   ↓
+Playwright BDD Execution (bddgen + Playwright)
+   ↓
+Results / Failure Analysis (FailureAnalyzer)
+   ↓
+Repair Candidate Synthesis (RepairAgent)
+   ↓
+Live Headless Browser Validation (validateLocatorOnPage)
+   ↓
+Verified ➔ Apply Patch / Retry Test Suite
 ```
 
 ---
 
 ## 🚀 Key Capabilities
 
-### 1. 🌐 Live Web Explorer & DOM Evidence (Phase 2)
-- Automatically launches headless Chromium when a `Target URL` is provided in the intent document.
-- Scans all interactive inputs, buttons, error containers, and headings.
-- Ranks selectors by Playwright resiliency:
-  1. `data-test` / `data-testid` (`[data-test="..."]`, confidence: `0.99`)
-  2. `getByRole` with accessible names (`role=button[name="..."]`, confidence: `0.95`)
-  3. `placeholder` & `aria-label` (confidence: `0.88`)
-  4. Short text & Semantic CSS
+### 1. 📄 Requirement-Driven Generation
+Start directly with human-readable Markdown requirements or Jira stories:
 
-### 2. 📑 Granular 1:1 Scenario & Page Object Generation
-- Generates dedicated typed **Page Object classes** under `generated/pages/` (e.g. `SauceDemoAuthenticationMatrixPage.ts`).
-- Generates individual `test('Scenario ...', async ({ page }) => { ... })` blocks for every scenario in the document with real step actions and assertions.
+```markdown
+# Feature: SauceDemo Authentication
 
-### 3. 🩹 Autonomous Self-Healing Loop
-- Catches broken locators (e.g. selector typos or UI refactors) during test execution.
-- Automatically pinpoints the failing line, proposes the correct locator, patches the `.spec.ts` file on disk, and re-executes the test until it passes.
+## Target URL
+https://www.saucedemo.com/
 
-### 4. 🐞 Real-Time Debug Tracing (`-d`)
-- Full visibility into HTTP payloads, token usage, live DOM discovery candidates, and JSON extraction traces.
+## Scenario: Successful Login
+Given the user opens the login page
+When the user enters username `standard_user`
+And the user enters password `secret_sauce`
+And the user clicks the Login button
+Then the user is redirected to `/inventory.html`
+And the page displays `Products`
+```
+
+Sentinel uses the requirement as the foundation for structured test generation.
 
 ---
 
-## 📁 Project Structure
+### 2. 🔎 Live Application Exploration
+When a target URL is provided, Sentinel inspects the live application using Playwright before generating code.
+
+It extracts resilient DOM evidence such as:
+* Semantic input fields and textareas
+* Primary and secondary buttons
+* Links and navigation elements
+* `data-test`, `id`, `aria-label`, and `placeholder` attributes
+* Accessible roles and text content
 
 ```text
-karsa-sentinel/
-├── assets/                  # Project brand assets (logo, badges)
-├── src/
-│   ├── agents/              # Autonomous agent layer
-│   │   ├── orchestrator/    # Central pipeline coordinator
-│   │   ├── explorer/        # Headless web crawler agent
-│   │   ├── test-designer/   # AI test scenario planner
-│   │   ├── bdd-generator/   # Gherkin scenario synthesizer
-│   │   ├── automation/      # Playwright spec generator
-│   │   ├── execution/       # Test runner & self-healing manager
-│   │   ├── repair/          # Locator diagnosis and repair agent
-│   │   └── requirement/     # Requirement extractor agent
-│   ├── core/                # Core architecture & contracts
-│   │   ├── models/          # TypeScript domain models
-│   │   ├── schemas/         # Zod validation schemas
-│   │   ├── contracts/       # Interfaces (IAIProvider, IDocumentParser, etc.)
-│   │   ├── logger/          # Categorized real-time debug logger
-│   │   └── pipeline/        # Step execution pipeline
-│   ├── crawler/             # Live browser inspection
-│   │   ├── browser/         # Playwright browser lifecycle manager
-│   │   ├── discovery/       # DOM element extraction engine
-│   │   └── locators/        # Resilient locator candidate ranking
-│   ├── documents/           # Intent document parsers
-│   │   ├── markdown/        # Markdown requirement parser
-│   │   └── parser/          # Parser registry
-│   ├── generators/          # Code generation engines
-│   │   ├── bdd/             # Gherkin formatter
-│   │   ├── playwright/      # Page Object & Playwright spec generator
-│   │   └── project/         # Output file scaffolder
-│   ├── execution/           # Test execution & triage
-│   │   ├── runner/          # Playwright test process runner
-│   │   ├── reporter/        # Summary result reporter
-│   │   └── failure-analysis/# Failure category classifier (LOCATOR_MISMATCH, etc.)
-│   ├── memory/              # Local memory & caching
-│   │   ├── requirements/    # Intent requirements store
-│   │   ├── application/     # Discovered UI elements cache
-│   │   └── automation/      # Generated test artifacts registry
-│   ├── providers/           # AI provider adapters
-│   │   ├── nine-router/     # 9Router OpenAI-compatible proxy adapter
-│   │   ├── openai/          # Direct OpenAI GPT-4o adapter
-│   │   ├── gemini/          # Google Gemini 1.5 adapter
-│   │   └── router/          # Dynamic provider router & Mock fallback
-│   ├── cli/                 # Commander.js CLI executable
-│   └── index.ts             # Public library barrel export
-├── scripts/                 # Publishing hooks (prepare-npm-readme.js, restore-readme.js)
-├── graphify-out/            # Persistent knowledge graph (graph.html, GRAPH_REPORT.md)
-├── docs/                    # Architectural specs, blueprints & example intent docs
-└── tests/                   # Vitest unit test suites
+AI Hypothesis:
+"Click button with text 'Submit'"
+
+Sentinel Live Verification:
+"Discovered element <button data-test='login-button'> with confidence 0.98"
 ```
+
+---
+
+### 3. 🧪 Context-Aware AI Test Design
+AI providers transform product intent and discovered UI evidence into structured test scenarios.
+
+The AI focuses on:
+* Dissecting business logic and edge cases
+* Generating positive and negative paths
+* Boundary value analysis
+* Extracting semantic user actions
+
+---
+
+### 4. 🥒 Enterprise Playwright BDD
+Enterprise mode automatically scaffolds clean, modular test architecture:
+
+```text
+my-project/
+├── features/
+│   └── authentication.feature       # 🥒 Gherkin Feature Specifications
+├── src/
+│   ├── pages/
+│   │   ├── base.page.ts             # 🏛️ Abstract BasePage (navigate, getErrorMessage, getTitleText)
+│   │   └── authentication.page.ts   # 📦 Domain Page Objects with typed locators & action methods
+│   ├── fixtures/
+│   │   └── base.fixture.ts          # 💉 Typed Page Object Dependency Injection (test.extend)
+│   └── steps/
+│       └── authentication.steps.ts  # 🪜 Step Definitions consuming Action IR (createBdd)
+└── playwright.config.ts             # ⚙️ defineBddConfig & Cucumber HTML Reporter
+```
+
+---
+
+### 5. 🧭 Scored Action Resolution & Strict Policy
+Sentinel does not blindly convert AI assumptions into code:
+
+```text
+Semantic Action: "user clicks login button"
+      ↓
+Search Live UI Evidence (ApplicationMemory)
+      ↓
+Score Candidates (by Tag, Semantic Name, Attribute Match)
+      ↓
+Calculate Confidence Score (0.0 to 1.0)
+      ↓
+┌───────────────────────────────────────────┐
+│ RESOLVED   ➔ Output concrete locator      │
+│ AMBIGUOUS  ➔ Low confidence diagnostics   │
+│ UNRESOLVED ➔ test.fail(true) explicit fail│
+└───────────────────────────────────────────┘
+```
+
+**Strict Resolution Policy**: Unresolved actions emit explicit diagnostics and fail honestly, eliminating silent waits and false-positive test passes.
+
+---
+
+### 6. ⚡ Incremental Requirement Intelligence
+Requirements are fingerprinted using SHA-256 to detect changes between test runs:
+
+```text
+New Requirement       ➔ Full Exploration & Generation
+Unchanged Requirement ➔ Instant Artifact Reuse (< 1s)
+Changed Requirement   ➔ Targeted Regeneration
+```
+
+---
+
+### 7. 🩹 Self-Healing Trust Loop
+When tests fail due to UI changes or selector shifts, Sentinel diagnoses the failure and initiates the **Trust Loop**:
+
+```text
+TEST FAILURE
+     ↓
+FailureAnalyzer Diagnoses Error Category
+     ↓
+RepairAgent Finds Alternative Candidate from ApplicationMemory
+     ↓
+Live Browser Validation: validateLocatorOnPage()
+     ↓
+Valid?
+ ┌────┴────┐
+ NO        YES
+ ↓          ↓
+Reject     Apply Code Patch to Disk
+Fallback     ↓
+To AI      Re-run Test Suite
+             ↓
+           Verify Green Pass!
+```
+
+> **A repair proposal is never trusted blindly — it must be validated on the live application before the code is modified.**
 
 ---
 
 ## ⚡ Quick Start Guide
 
-### 1. Initialize your project
+### 1. Initialize a project
 ```bash
 npx karsa-sentinel init
 ```
-*Automatically creates `playwright.config.ts` (with HTML reporting and `dotenv`), `.env.example`, starter specs, and npm scripts.*
+*Scaffolds `playwright.config.ts` (with `defineBddConfig` & HTML reports), `src/pages/base.page.ts`, `src/fixtures/base.fixture.ts`, `.env.example`, and npm scripts.*
 
-### 2. Write your requirement (`docs/login.md`)
+### 2. Create a requirement (`docs/login.md`)
 ```markdown
-# Feature: SauceDemo Authentication Matrix
+# Feature: SauceDemo Authentication
 
 ## Target URL
-`https://www.saucedemo.com/`
+https://www.saucedemo.com/
 
-## Scenarios
-
-### Scenario 1: Standard User Login Success
-- **Given** user navigates to `https://www.saucedemo.com/`
-- **When** user enters username `standard_user`
-- **And** user enters password `secret_sauce`
-- **And** user clicks the Login button
-- **Then** user is redirected to `/inventory.html`
-- **And** header title displays "Products"
-
-### Scenario 2: Locked Out User Error Banner
-- **Given** user navigates to `https://www.saucedemo.com/`
-- **When** user enters username `locked_out_user`
-- **And** user enters password `secret_sauce`
-- **And** user clicks the Login button
-- **Then** error message "Epic sadface: Sorry, this user has been locked out." is displayed
+## Scenario: Standard User Login
+Given the user navigates to the login page
+When the user enters username `standard_user`
+And the user enters password `secret_sauce`
+And the user clicks the Login button
+Then the user is redirected to `/inventory.html`
+And the page displays `Products`
 ```
 
-### 3. Generate & Run
+### 3. Generate automation
 ```bash
-# Generate BDD Features, Page Objects & Playwright Specs
-npm run generate
-
-# Run tests with Autonomous Self-Healing
-npm test
-
-# Open interactive HTML report
-npm run report
+npx karsa-sentinel generate ./docs/login.md
 ```
+*Or using project npm scripts:*
+```bash
+npm run generate
+```
+
+### 4. Run tests
+```bash
+npx karsa-sentinel run
+```
+*Or:*
+```bash
+npm test
+```
+
+---
+
+## 🏗️ Generation Modes
+
+| Mode | Command | Output Structure | Best For |
+| :--- | :--- | :--- | :--- |
+| **`enterprise`** *(Default)* | `karsa-sentinel generate <doc>` | `features/*.feature`<br>`src/pages/*.page.ts`<br>`src/fixtures/base.fixture.ts`<br>`src/steps/*.steps.ts` | Production test suites, maintainable POM architecture, multi-page applications |
+| **`standalone`** | `karsa-sentinel generate <doc> --mode=standalone` | `generated/*.feature`<br>`generated/*.spec.ts`<br>`generated/pages/*Page.ts` | Quick prototyping, single-file scripts, lightweight verification |
 
 ---
 
 ## 🤖 Supported AI Providers
 
-| Provider                | Description                                                                     | Required Environment Variables                                                                                                           |
-| :------------------------| :--------------------------------------------------------------------------------| :-----------------------------------------------------------------------------------------------------------------------------------------|
-| **9Router** *(Default)* | OpenAI-compatible local/cloud proxy routing to high-speed models (`mimo`, etc.) | `AI_PROVIDER=9router`<br>`NINE_ROUTER_BASE_URL=http://localhost:20218/v1`<br>`NINE_ROUTER_AUTH_TOKEN=sk-...`<br>`NINE_ROUTER_MODEL=mimo` |
-| **OpenAI**              | Direct OpenAI API connection                                                    | `AI_PROVIDER=openai`<br>`OPENAI_API_KEY=sk-...`<br>`AI_MODEL=gpt-4o`                                                                     |
-| **Google Gemini**       | Google Generative AI                                                            | `AI_PROVIDER=gemini`<br>`GEMINI_API_KEY=...`<br>`AI_MODEL=gemini-1.5-pro`                                                                |
-| **Mock**                | Deterministic offline provider for local testing and CI/CD pipelines            | `AI_PROVIDER=mock` *(fallback if no keys provided)*                                                                                      |
-
----
-
-## ⚙️ Configuration (`.env`)
+Karsa Sentinel supports multiple provider adapters configured via `.env`:
 
 ```env
-# ── AI Provider Configuration ────────────────────────────────
-AI_PROVIDER=9router # 9router | openai | gemini | mock
-
-# ── 9Router AI Proxy ─────────────────────────────────────────
+# ── 9Router Proxy (Default) ──────────────────────────────────
+AI_PROVIDER=9router
 NINE_ROUTER_BASE_URL=http://localhost:20218/v1
 NINE_ROUTER_AUTH_TOKEN=sk-your-token-here
 NINE_ROUTER_MODEL=mimo
@@ -280,82 +446,74 @@ MAX_REPAIR_ATTEMPTS=3
 DEBUG=false
 ```
 
+### Alternative Providers:
+
+```env
+# OpenAI Direct
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+AI_MODEL=gpt-4o
+```
+
+```env
+# Google Gemini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your-api-key
+AI_MODEL=gemini-1.5-pro
+```
+
+```env
+# Mock Provider (Deterministic offline testing & CI/CD)
+AI_PROVIDER=mock
+```
+
 ---
 
 ## 💻 CLI Reference
 
 ### `karsa-sentinel init`
-Initializes workspace with Playwright configuration, HTML reports, and sample specs.
+Initializes workspace with Enterprise BDD configuration, `BasePage`, typed fixtures, and starter files.
 ```bash
 karsa-sentinel init [-d]
 ```
 
 ### `karsa-sentinel generate <documentPath>`
-Generates BDD features, Page Objects, and Playwright tests from an intent document.
+Generates BDD features, Page Objects, step definitions, and fixtures from an intent document.
 ```bash
 karsa-sentinel generate <documentPath> [options]
 ```
 
 #### Options:
-- `-d, --debug`: Enable detailed debug mode with verbose log tracing.
-- `-o, --output <dir>`: Directory where generated files will be written *(default: `generated`)*.
-- `-p, --provider <name>`: Override AI provider (`9router` | `openai` | `gemini` | `mock`).
-- `-m, --model <name>`: Override AI model name (e.g. `mimo`, `gpt-4o`).
-- `--skip-crawl`: Skip live browser DOM exploration.
+* `-m, --mode <mode>`: Generation mode: `enterprise` (default) | `standalone`.
+* `-d, --debug`: Enable detailed diagnostic logging.
+* `-o, --output <dir>`: Directory where generated files will be written *(default: `generated`)*.
+* `-p, --provider <name>`: Override AI provider (`9router` | `openai` | `gemini` | `mock`).
+* `--model <name>`: Override AI model name (e.g. `mimo`, `gpt-4o`).
+* `--skip-crawl`: Skip live browser DOM exploration.
 
 ### `karsa-sentinel run [testPath]`
-Executes Playwright tests with autonomous failure diagnosis and live self-repair.
+Executes Playwright tests (auto-compiles with `bddgen`) with autonomous failure diagnosis and live self-repair.
 ```bash
 karsa-sentinel run [testPath] [-r, --repair] [-d, --debug]
 ```
 
 ---
 
-## 🩹 Autonomous Self-Healing
+## 🐞 Debug Mode (`-d`)
 
-When running tests via `karsa-sentinel run` or `npm test`, Sentinel actively monitors test output for selector errors:
+Use `-d` or `--debug` to inspect real-time agent reasoning, DOM evidence extraction, and network interactions:
 
-```text
-$ npx karsa-sentinel run
-
-🛡️  Karsa Sentinel: Running test suite (generated)...
-
-========================================
-Test Run Result: FAILED
-========================================
-
-🩹 Karsa Sentinel Self-Repair: Attempt 1/3 healing failing test...
-   🔍 Detected Broken Locator: [data-test="error"], [class*="erroor"] in generated/saucedemo-authentication-matrix.spec.ts
-   ✨ Self-Healing Proposal: Replace with [data-test="error"], [class*="error"]
-   💾 Patched saucedemo-authentication-matrix.spec.ts successfully. Re-running test suite...
-
-========================================
-Test Run Result: PASSED
-========================================
-
-🎉 Self-Healing Succeeded! All tests are now passing.
+```bash
+karsa-sentinel generate ./docs/login.md --debug
 ```
 
----
-
-## 🐞 Real-Time Debug Tracing (`-d`)
-
-Run any command with the **`-d`** flag to inspect the entire agent thought process and network activity:
-
 ```text
-[DEBUG:CLI:INIT] Debug mode enabled. Verbose tracing is ACTIVE.
-[DEBUG:ORCHESTRATOR:PARSER] Parsed requirement: "SauceDemo Authentication Matrix" (4 scenarios)
-[DEBUG:BROWSER:LAUNCH] Launching Chromium browser (headless=true)
-[DEBUG:EXPLORER:DOM] Discovered 9 raw DOM elements on page
-[DEBUG:EXPLORER:LOCATORS] Top discovered element candidates:
-[
-  { "tag": "input", "name": "user-name", "bestLocator": "[data-test=\"username\"]", "confidence": 0.99 },
-  { "tag": "input", "name": "password", "bestLocator": "[data-test=\"password\"]", "confidence": 0.99 }
-]
-[DEBUG:9ROUTER:HTTP] Sending POST to http://localhost:20218/v1/chat/completions with model [mimo]
-[DEBUG:9ROUTER:USAGE] Tokens: 3112 (prompt: 2469, completion: 643)
-[DEBUG:JSON:EXTRACT_SUCCESS] Successfully parsed JSON structure
-[DEBUG:ORCHESTRATOR:COMPLETE] Wrote artifacts to generated/
+[DEBUG:ORCHESTRATOR] Parsing requirement document: docs/login.md
+[DEBUG:REQ_MEMORY] Fingerprint check: NEW requirement detected
+[DEBUG:EXPLORER] Launching headless browser for https://www.saucedemo.com...
+[DEBUG:EXPLORER] Discovered 9 interactive DOM elements
+[DEBUG:ACTION_RESOLVER] "user clicks login button" ➔ [data-test="login-button"] (confidence: 0.98)
+[DEBUG:PROJECT_GEN] Writing Enterprise BDD artifacts: features/, src/pages/, src/steps/, src/fixtures/
 ```
 
 ---
@@ -363,9 +521,13 @@ Run any command with the **`-d`** flag to inspect the entire agent thought proce
 ## 🔌 Programmatic TypeScript API
 
 ```typescript
-import { SentinelOrchestrator, NineRouterProvider, logger } from "karsa-sentinel";
+import {
+  SentinelOrchestrator,
+  NineRouterProvider,
+  logger,
+} from "karsa-sentinel";
 
-// Optional: Enable debug mode
+// Optional: Enable debug tracing
 logger.setDebug(true);
 
 const provider = new NineRouterProvider({
@@ -375,25 +537,56 @@ const provider = new NineRouterProvider({
 });
 
 const orchestrator = new SentinelOrchestrator(provider);
+
 const result = await orchestrator.generate({
   documentPath: "./docs/login.md",
-  outputDirectory: "./generated",
+  mode: "enterprise",
 });
 
 console.log("Feature created at:    ", result.featureFile);
-console.log("Spec created at:       ", result.specFile);
+console.log("Steps created at:      ", result.stepFile);
 console.log("Page Object created at:", result.pageObjectFile);
+console.log("Fixture created at:    ", result.fixtureFile);
 ```
 
 ---
 
-## 📊 Knowledge Graph (Graphify)
+## 📁 Project Structure
 
-The codebase architecture is mapped using **Graphify**. You can open the interactive visualizer in any web browser without needing a server:
-
-```bash
-# Open interactive knowledge graph in browser
-open graphify-out/graph.html
+```text
+karsa-sentinel/
+├── assets/                  # Brand assets & architecture visualizations
+│   ├── logo.png
+│   └── karsa-sentinel-visualize.png
+├── features/                # 🥒 Gherkin BDD Feature specifications
+│   └── *.feature
+├── src/
+│   ├── agents/              # Autonomous agent layer
+│   │   ├── orchestrator/    # Central pipeline coordinator & memory gate
+│   │   ├── explorer/        # Headless web crawler agent
+│   │   ├── test-designer/   # AI test scenario planner
+│   │   ├── bdd-generator/   # Gherkin scenario synthesizer
+│   │   ├── execution/       # Test runner & repair orchestrator
+│   │   └── repair/          # Failure diagnosis & live browser validation
+│   ├── core/                # Core architecture & contracts
+│   │   ├── models/          # TypeScript domain models
+│   │   ├── schemas/         # Zod validation schemas
+│   │   ├── contracts/       # Interfaces (IAIProvider, IDocumentParser, etc.)
+│   │   └── logger/          # Categorized real-time debug logger
+│   ├── crawler/             # Live browser inspection
+│   ├── documents/           # Intent document parsers (Markdown, Jira)
+│   ├── resolver/            # Scored action resolution engine
+│   ├── generators/          # Enterprise BDD & standalone code generators
+│   ├── execution/           # Playwright runner & failure analysis
+│   ├── memory/              # Requirements, Application DOM & Automation stores
+│   ├── providers/           # AI adapters (9Router, OpenAI, Gemini, Mock)
+│   ├── fixtures/            # 💉 Typed dependency injection fixtures
+│   ├── pages/               # 📦 BasePage & domain Page Objects
+│   ├── steps/               # 🪜 Gherkin step definitions (createBdd)
+│   └── cli/                 # Commander.js CLI executable
+├── playwright.config.ts     # ⚙️ defineBddConfig & Cucumber HTML report config
+├── package.json
+└── tsconfig.json
 ```
 
 ---
@@ -420,5 +613,16 @@ npm run build
 
 ---
 
+## 🤝 Contributing
+
+Karsa Sentinel is an evolving open-source experiment around autonomous, evidence-grounded AI test engineering.
+
+Contributions, ideas, bug reports, and architectural discussions are welcome!
+
+See the repository: [https://github.com/skeithnight/karsa-sentinel](https://github.com/skeithnight/karsa-sentinel)
+
+---
+
 ## 📄 License
+
 [MIT](LICENSE) © [skeithnight](https://github.com/skeithnight)

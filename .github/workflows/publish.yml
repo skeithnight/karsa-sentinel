@@ -1,13 +1,59 @@
 name: Publish Package
 
 on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
   release:
     types: [created]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
+  validate-and-tag:
+    name: Validate & Create Release Tag
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'release' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true &&
+       (startsWith(github.event.pull_request.head.ref, 'release/') || startsWith(github.event.pull_request.head.ref, 'hotfix/')))
+    outputs:
+      version: ${{ steps.pkg-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract package version
+        id: pkg-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: v$VERSION"
+
+      - name: Create Git Tag and GitHub Release
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.pkg-version.outputs.version }}
+        run: |
+          if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Creating tag and release for v$VERSION..."
+            gh release create "v$VERSION" --generate-notes --title "Release v$VERSION" --target main
+          else
+            echo "Tag v$VERSION already exists."
+          fi
+
   publish-npm:
     name: Publish to npmjs.com
+    needs: validate-and-tag
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -34,6 +80,7 @@ jobs:
 
   publish-github-packages:
     name: Publish to GitHub Packages
+    needs: validate-and-tag
     runs-on: ubuntu-latest
     permissions:
       contents: read
